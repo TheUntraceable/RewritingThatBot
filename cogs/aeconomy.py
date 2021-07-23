@@ -639,16 +639,15 @@ class Economy(commands.Cog):
         data = await self.client.economy.find(member.id)
         if data:
             return True
-        else:
-            data = {
-                "user": member.id,
-                "wallet": 0,
-                "bank": 0,
-                "banklimit": 50000,
-                "passive": False,
-                "bag": []
-            }
-            await self.client.economy.insert_one(data)
+        data = {
+              "user": member.id,
+              "wallet": 0,
+              "bank": 0,
+              "banklimit": 50000,
+              "passive": False,
+              "bag": []
+          }
+        await self.client.economy.insert_one(data)
 
     async def buy_item(self, member, item_name, amount):
         data = await self.client.economy.find(member.id)
@@ -711,7 +710,7 @@ class Economy(commands.Cog):
         await self.client.economy.upsert(data)
         return [True]
 
-    @commands.command(cooldown_after_parsing=True)
+    @commands.command()
     @commands.cooldown(1, 20, commands.BucketType.user)
     async def slots(self,ctx,amount:int):
 
@@ -766,62 +765,57 @@ class Economy(commands.Cog):
     @commands.cooldown(1,30, commands.BucketType.user)
     async def search(self,ctx):
       bankinfo = await self.collection.find_one({"user": ctx.author.id})
-      if not bankinfo:
-        #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
+      await self.check_acc(ctx.author)
+    
+      searching_places = ['van','area51','air','grass','hospital','dog','bank','shoe','tree','house','discord','pocket']
+      messages = {
+        'van':'This would happen in real life also! Very nice Falc!',
+        'area51':'NOW RUN! the government is behind you',
+        'air': 'How the Heck? Why were you even looking there?',
+        'grass':'How? I wonder if somebody left there wallet',
+        'hospital':'Are you proud of yourself Now?',
+        'dog':'That poor poor Dog',
+        'bank':'Did you just roub the bank?!',
+        'shoe':'Why were you looking in your shoe?',
+        'tree':'Why were you searching in a tree?',
+        'house':'Be happy Your mother was nice',
+        'discord':'Your DMs are valuable :thinking:',
+        'pocket':'Now it is in your wallet!'}
 
+      a = random.choice(searching_places)
+      searching_places.remove(a)
+      b = random.choice(searching_places)
+      searching_places.remove(b)
+      c = random.choice(searching_places)
+      searching_places.remove(c)
+
+      await ctx.send(f'**Where do you want to search** {ctx.author.mention}\nchoose from the following and type in the chat\n`{a}`,`{b}` or `{c}`')
+
+
+      def check(m):
+        return m.author == ctx.author
+
+      msg = await self.client.wait_for('message',check=check)
+    
+      if msg.content.lower() != a and msg.content.lower() != b and msg.content.lower() != c:
+          await ctx.send(f'What Are You Thinking {ctx.author.mention}, Thats Not a valid Option')
+          
       else:
-        searching_places = ['van','area51','air','grass','hospital','dog','bank','shoe','tree','house','discord','pocket']
-        messages = {
-          'van':'This would happen in real life also! Very nice Falc!',
-          'area51':'NOW RUN! the government is behind you',
-          'air': 'How the Heck? Why were you even looking there?',
-          'grass':'How? I wonder if somebody left there wallet',
-          'hospital':'Are you proud of yourself Now?',
-          'dog':'That poor poor Dog',
-          'bank':'Did you just roub the bank?!',
-          'shoe':'Why were you looking in your shoe?',
-          'tree':'Why were you searching in a tree?',
-          'house':'Be happy Your mother was nice',
-          'discord':'Your DMs are valuable :thinking:',
-          'pocket':'Now it is in your wallet!'}
+          coins = random.randint(60,500)
+          if msg.content.lower() == a:
+            await ctx.send(f'{ctx.author.mention} searched the {a}\nYou Found {coins} coins,{messages[a]}')
 
-        a = random.choice(searching_places)
-        searching_places.remove(a)
-        b = random.choice(searching_places)
-        searching_places.remove(b)
-        c = random.choice(searching_places)
-        searching_places.remove(c)
+          if msg.content.lower() == c:
+            await ctx.send(f'{ctx.author.mention} searched the {c}\nYou Found {coins} coins,{messages[c]}')
 
-        await ctx.send(f'**Where do you want to search** {ctx.author.mention}\nchoose from the following and type in the chat\n`{a}`,`{b}` or `{c}`')
+          if msg.content.lower() == b:
+            await ctx.send(f'{ctx.author.mention} searched the {b}\nYou Found {coins} coins,{messages[b]}')
 
-
-        def check(m):
-          return m.author == ctx.author
-
-        msg = await self.client.wait_for('message',check=check)
-      
-        if msg.content.lower() != a and msg.content.lower() != b and msg.content.lower() != c:
-            await ctx.send(f'What Are You Thinking {ctx.author.mention}, Thats Not a valid Option')
-            
-        else:
-            coins = random.randint(60,500)
-            if msg.content.lower() == a:
-              await ctx.send(f'{ctx.author.mention} searched the {a}\nYou Found {coins} coins,{messages[a]}')
-
-            if msg.content.lower() == c:
-              await ctx.send(f'{ctx.author.mention} searched the {c}\nYou Found {coins} coins,{messages[c]}')
-
-            if msg.content.lower() == b:
-              await ctx.send(f'{ctx.author.mention} searched the {b}\nYou Found {coins} coins,{messages[b]}')
-
-            bankinfo['wallet'] += coins
+          bankinfo['wallet'] += coins
 
 
 
-        await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
+      await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : coins}})
 
     @search.error
     async def search_error(self,ctx,error):
@@ -831,124 +825,94 @@ class Economy(commands.Cog):
 
 
     @commands.command()
-    async def give(self,ctx,amount:int,member:discord.Member=None):
-      if member == None:
-        await ctx.send('Try running the command again but this time tell who do you want to give your money to! :rolling_eyes:')
-        return
-
-      bankinfo = await self.collection.find_one({"user": ctx.author.id})
-      if not bankinfo:
-        #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
-
-      bankinfo1 = await self.collection.find_one({"user": member.id})
-      if not bankinfo1:
-        #make new entry
-        await self.collection.insert_one({"user": member.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{member.name} is new, opening new bank account.')
-        return
-
-      else:
-        if bankinfo['wallet'] < amount:
-          await ctx.send('You do not have that much money in your wallet')
-
-        else:
-          bankinfo['wallet'] -= amount
-          bankinfo1['wallet'] += amount
-          await ctx.send(f"{ctx.author.mention} gave {amount} couns to {member.mention}, Now {ctx.author.mention} has {bankinfo['wallet']} coins and {member.mention} has {bankinfo1['wallet']} fluxes")
-          await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
-          await self.collection.replace_one({"user": bankinfo1['user']},{"user": bankinfo1['user'], "wallet": bankinfo1['wallet'], "bank": bankinfo1['bank'],"inventory" : bankinfo1['inventory']})
-
+    async def send(self, ctx,member : discord.Member,amount = None):
+      await self.check_acc(ctx.author)
+      await self.check_acc(member)
+      users = await self.client.economy.find_one({"user" : ctx.author.id})
+      wallet_amt = users["wallet"] 
+      bal = [users["wallet"],users["bank"]]
+      if amount == ("all" or "max"):
+        amount = bal[0]
+      amount = int(amount)
+      if amount == None:
+        return await ctx.reply("Please enter an amount you would like to send!")
+      elif amount>bal[1]:
+        return await ctx.reply(f"You do not have that much money! You only have {wallet_amt} in your wallet!")
+      elif amount<=0:
+        return await ctx.reply("No. You can't do that. The amount must be positive")
+        
           
     @commands.command()
     @commands.cooldown(1,20, commands.BucketType.user)
     async def fish(self,ctx):
       bankinfo = await self.collection.find_one({"user": ctx.author.id})
-      if not bankinfo:
-        #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
+      await self.check_acc(ctx.author)
+      caught = random.randint(0,3)
 
+      if 'fishing pole' not in bankinfo['inventory'].keys():
+        return await ctx.send('First buy a fishing pole!')
+
+      if not bankinfo['inventory']['fishing pole'] >= 1:
+          return await ctx.send('First buy a fishing pole!')
+
+      if caught == 0:
+        await ctx.send('LOL you are BAD You couldnt find anything')
       else:
-        caught = random.choice([0,1])
-
-        if 'fishing pole' not in bankinfo['inventory'].keys():
-          await ctx.send('First buy a fishing pole!')
-
+        fishes = random.randint(1,5)
+        await ctx.send(f'You brough back {fishes} fish 🐟!')
+        if 'fish' in bankinfo['inventory'].keys():
+          bankinfo['inventory']['fish'] += fishes
         else:
+          bankinfo['inventory']['fish'] = fishes
 
-          if not bankinfo['inventory']['fishing pole'] >= 1:
-            return await ctx.send('First buy a fishing pole!')
-
-          if caught == 0:
-            await ctx.send('LOL you are BAD You couldnt find anything')
-
-          else:
-            fishes = random.randint(1,5)
-            await ctx.send(f'You brough back {fishes} fish 🐟!')
-            if 'fish' in bankinfo['inventory'].keys():
-              bankinfo['inventory']['fish'] += fishes
-
-            else:
-              bankinfo['inventory']['fish'] = fishes
-
-        await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
+        await self.client.economy.update_one({"user": ctx.author},{"$set" : {"inventory" : bankinfo["inventory"]}})
 
     
     @commands.command()
     @commands.cooldown(1,20, commands.BucketType.user)
     async def hunt(self,ctx):
       bankinfo = await self.collection.find_one({"user": ctx.author.id})
-      if not bankinfo:
-        #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
+      await self.check_acc(ctx.author)
+      caught = random.randint(0,3)
+
+      if 'rifle' not in bankinfo['inventory'].keys():
+        await ctx.send('First buy a rifle!')
 
       else:
-        caught = random.choice([0,1])
 
-        if 'rifle' not in bankinfo['inventory'].keys():
-          await ctx.send('First buy a rifle!')
+        if not bankinfo['inventory']['rifle'] >=1:
+          return await ctx.send('First buy a rifle!')
+
+        if caught == 0:
+          await ctx.send('LOL you are BAD You couldnt find anything')
 
         else:
+          animals = ['rabbit🐇','deer🦌','horse🐎'] 
+          animal = random.choice(animals)
+          animalnum = random.randint(1,3)
+          await ctx.send(f'You brough back {animalnum} {animal}!')
+          if animal == 'rabbit🐇':
+            if 'rabbit' in bankinfo['inventory'].keys():
+              bankinfo['inventory']['rabbit'] += animalnum
 
-          if not bankinfo['inventory']['rifle'] >=1:
-            return await ctx.send('First buy a rifle!')
+            else:
+              bankinfo['inventory']['rabbit'] = animalnum
 
-          if caught == 0:
-            await ctx.send('LOL you are BAD You couldnt find anything')
+          if animal == 'deer🦌':
+            if 'deer' in bankinfo['inventory'].keys():
+              bankinfo['inventory']['deer'] += animalnum
 
-          else:
-            animals = ['rabbit🐇','deer🦌','horse🐎'] 
-            animal = random.choice(animals)
-            animalnum = random.randint(1,3)
-            await ctx.send(f'You brough back {animalnum} {animal}!')
-            if animal == 'rabbit🐇':
-              if 'rabbit' in bankinfo['inventory'].keys():
-                bankinfo['inventory']['rabbit'] += animalnum
+            else:
+              bankinfo['inventory']['deer'] = animalnum
 
-              else:
-                bankinfo['inventory']['rabbit'] = animalnum
+          if animal == 'horse🐎':
+            if 'horse' in bankinfo['inventory'].keys():
+              bankinfo['inventory']['horse'] += animalnum
 
-            if animal == 'deer🦌':
-              if 'deer' in bankinfo['inventory'].keys():
-                bankinfo['inventory']['deer'] += animalnum
+            else:
+              bankinfo['inventory']['horse'] = animalnum
 
-              else:
-                bankinfo['inventory']['deer'] = animalnum
-
-            if animal == 'horse🐎':
-              if 'horse' in bankinfo['inventory'].keys():
-                bankinfo['inventory']['horse'] += animalnum
-
-              else:
-                bankinfo['inventory']['horse'] = animalnum
-
-        await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
+      await self.collection.update_one({"user": ctx.author.id},{"$set" : {"inventory" : bankinfo["inventory"]}})
 
 
     @commands.command(aliases=['postmeme'])
@@ -956,213 +920,177 @@ class Economy(commands.Cog):
     
     async def pm(self,ctx):
       bankinfo = await self.collection.find_one({"user": ctx.author.id})
-      if not bankinfo:
-        #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
+      await self.check_acc(ctx.author)
+      if 'laptop' not in bankinfo['inventory'].keys():
+        return await ctx.send('You need to buy a laptop for this!')
 
-      else:
-        if 'laptop' not in bankinfo['inventory'].keys():
-          await ctx.send('You need to buy a laptop for this!')
+      await ctx.send('What type of meme do you want to post online:\n`a`Kind Meme\n`b`Inspirational Meme\n`c`Copypasta\n`d`Fresh Meme\n`e`Random Meme')
+
+      def check(m):
+        return m.author == ctx.author
+
+      msg = await self.client.wait_for('message',check=check)
+
+      if msg.content.lower() == 'a':
+        choice = random.choice([0,1])
+        if choice == 0:
+          await ctx.send('Nobody Liked Your Kind Meme LOL!')
 
         else:
-          if bankinfo['inventory']['laptop'] < 1:
-            return await ctx.send('You need to buy a laptop for this!')
-
-          await ctx.send('What type of meme do you want to post online:\n`a`Kind Meme\n`b`Inspirational Meme\n`c`Copypasta\n`d`Fresh Meme\n`e`Random Meme')
-
-          def check(m):
-            return m.author == ctx.author
-
-          msg = await self.client.wait_for('message',check=check)
-
-          if msg.content.lower() == 'a':
-            choice = random.choice([0,1])
-            if choice == 0:
-              await ctx.send('Nobody Liked Your Kind Meme LOL!')
-
-            else:
-              decent_nice = random.choice(['decent','awesome'])
-              if decent_nice == 'decent':
-                amount = random.randint(300,600)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your Kind meme got decent response online! you got {amount} coins from the ads!')
-
-              else:
-                amount = random.randint(600,800)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your Kind meme is VIRAL!!! you got {amount} coins by the ads')
-
-          elif msg.content.lower() == 'b':
-            choice = random.choice([0,1])
-            if choice == 0:
-              await ctx.send('Nobody Liked Your Inspirational Meme LOL!')
-
-            else:
-              decent_nice = random.choice(['decent','awesome'])
-              if decent_nice == 'decent':
-                amount = random.randint(100,300)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your Inspirational meme got decent response online! you got {amount} coins from the ads!')
-
-              else:
-                amount = random.randint(300,500)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your Inspirational meme went VIRAL online! you got {amount} coins from the ads!')
-
-          elif msg.content.lower() == 'c':
-            choice = random.choice([0,1])
-            if choice == 0:
-              await ctx.send('Nobody Liked Your CopyPasta Meme LOL!')
-
-            else:
-              decent_nice = random.choice(['decent','awesome'])
-              if decent_nice == 'decent':
-                amount = random.randint(100,400)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your CopyPasta meme got decent response online! you got {amount} coins from the ads!')
-                
-              else:
-                amount = random.randint(400,600)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your CopyPasta meme went VIRAL online! you got {amount} coins from the ads!')
-                
-
-          elif msg.content.lower() == 'd':
-            choice = random.choice([0,1])
-            if choice == 0:
-              await ctx.send('Nobody Liked Your Fresh Meme LOL!')
-
-            else:
-              decent_nice = random.choice(['decent','awesome'])
-              if decent_nice == 'decent':
-                amount = random.randint(300,600)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your Fresh meme got decent response online! you got {amount} coins from the ads!')
-
-              else:
-                amount = random.randint(600,1000)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your Fresh meme went VIRAL online! you got {amount} coins from the ads!')
-
-          elif msg.content.lower() == 'e':
-            choice = random.choice([0,1])
-            if choice == 0:
-              await ctx.send('Nobody Liked Your Random Meme LOL!')
-
-            else:
-              decent_nice = random.choice(['decent','awesome'])
-              if decent_nice == 'decent':
-                amount = random.randint(100,300)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your Random meme decent response online! you got {amount} coins from the ads!')
-
-              else:
-                amount = random.randint(300,500)
-                bankinfo['wallet'] += amount
-                await ctx.send(f'Your Random meme went VIRAL online! you got {amount} coins from the ads!')
+          decent_nice = random.choice(['decent','awesome'])
+          if decent_nice == 'decent':
+            amount = random.randint(300,600)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your Kind meme got decent response online! you got {amount} coins from the ads!')
 
           else:
-            await ctx.send('Thats Not a Valid Option')
+            amount = random.randint(600,800)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your Kind meme is VIRAL!!! you got {amount} coins by the ads')
 
-        await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
+      elif msg.content.lower() == 'b':
+        choice = random.choice([0,1])
+        if choice == 0:
+          await ctx.send('Nobody Liked Your Inspirational Meme LOL!')
+
+        else:
+          decent_nice = random.choice(['decent','awesome'])
+          if decent_nice == 'decent':
+            amount = random.randint(100,300)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your Inspirational meme got decent response online! you got {amount} coins from the ads!')
+
+          else:
+            amount = random.randint(300,500)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your Inspirational meme went VIRAL online! you got {amount} coins from the ads!')
+
+      elif msg.content.lower() == 'c':
+        choice = random.choice([0,1])
+        if choice == 0:
+          await ctx.send('Nobody Liked Your CopyPasta Meme LOL!')
+
+        else:
+          decent_nice = random.choice(['decent','awesome'])
+          if decent_nice == 'decent':
+            amount = random.randint(100,400)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your CopyPasta meme got decent response online! you got {amount} coins from the ads!')
+            
+          else:
+            amount = random.randint(400,600)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your CopyPasta meme went VIRAL online! you got {amount} coins from the ads!')
+            
+
+      elif msg.content.lower() == 'd':
+        choice = random.choice([0,1])
+        if choice == 0:
+          await ctx.send('Nobody Liked Your Fresh Meme LOL!')
+
+        else:
+          decent_nice = random.choice(['decent','awesome'])
+          if decent_nice == 'decent':
+            amount = random.randint(300,600)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your Fresh meme got decent response online! you got {amount} coins from the ads!')
+
+          else:
+            amount = random.randint(600,1000)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your Fresh meme went VIRAL online! you got {amount} coins from the ads!')
+
+      elif msg.content.lower() == 'e':
+        choice = random.choice([0,1])
+        if choice == 0:
+          await ctx.send('Nobody Liked Your Random Meme LOL!')
+
+        else:
+          decent_nice = random.choice(['decent','awesome'])
+          if decent_nice == 'decent':
+            amount = random.randint(100,300)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your Random meme decent response online! you got {amount} coins from the ads!')
+
+          else:
+            amount = random.randint(300,500)
+            bankinfo['wallet'] += amount
+            await ctx.send(f'Your Random meme went VIRAL online! you got {amount} coins from the ads!')
+
+      else:
+        await ctx.send('Thats Not a Valid Option')
+
+      await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : amount}})
 
               
     @commands.command(aliases= ["bet"])
     @commands.cooldown(1, 20, commands.BucketType.user) 
     async def gamble(self,ctx,amount:int=None):
+      bankinfo =  await self.client.economy.find_one({"user" : ctx.author.id})
+      await self.check_acc(ctx.author)
+      if amount == None:
+        await ctx.send('Try the command again but next time tell me how much money are you want to bet')
 
-      bankinfo = await self.collection.find_one({"user": ctx.author.id})
-      if not bankinfo:
-        #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
-
+      elif amount > bankinfo['wallet']:
+        await ctx.send('You cant bet more than how much money you have ')
 
       else:
-      
 
-        if amount == None:
-          await ctx.send('Try the command again but next time tell me how much money are you want to bet')
+        a = random.randint(0,10)
+        b = random.randint(0,10)
 
-        elif amount > bankinfo['wallet']:
-          await ctx.send('You cant bet more than how much money you have ')
+        embed=discord.Embed(title=f"{ctx.author.name}'s Gambling Game",colour=discord.Colour.blue())
+        embed.add_field(name=f'Falc rolled `{a}`',value="\u200b")
+        embed.add_field(name=f'{ctx.author.name} rolled `{b}`',value="\u200b")
 
+        if a<b:
+          embed.add_field(name='**You Won!**',value=f'You win {amount} coins!',inline=False)
+          bankinfo['wallet'] += amount
+        elif a>b:
+          embed.add_field(name='**I won!**',value=f'You loose {amount} coins!',inline=False)
+          bankinfo['wallet'] -= amount
         else:
+          embed.add_field(name='**Its a Draw**',value='No one wins or looses any money',inline=False)
 
-          a = random.randint(0,10)
-          b = random.randint(0,10)
-
-          embed=discord.Embed(title=f"{ctx.author.name}'s Gambling Game",colour=discord.Colour.blue())
-          embed.add_field(name=f'Falc rolled `{a}`',value="\u200b")
-          embed.add_field(name=f'{ctx.author.name} rolled `{b}`',value="\u200b")
-
-          if a<b:
-            embed.add_field(name='**You Won!**',value=f'You win {amount} coins!',inline=False)
-            bankinfo['wallet'] += amount
-          elif a>b:
-            embed.add_field(name='**I won!**',value=f'You loose {amount} coins!',inline=False)
-            bankinfo['wallet'] -= amount
-          else:
-            embed.add_field(name='**Its a Draw**',value='No one wins or looses any money',inline=False)
-
-          await ctx.send(embed=embed)
-    
-          await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
+        await ctx.send(embed=embed)
+  
+        await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : amount}},upsert=False)
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def enable(self,ctx,what):
       if what.lower() == 'rob':
-        await self.collection.update_one({"guildID" : ctx.guild},{"$set" : {"robbing" : True}})
+        await self.collection.update_one({"guildID" : ctx.guild},{"$set" : {"robbing" : True}},upsert=True)
         await ctx.send('Rob Enabled!')
       if what.lower() == 'tips' or what.lower() == 'tip':
-        await self.collection.update_one({"guilDID" : ctx.guild.id},{"$set" : {"tips" : True}})
+        await self.collection.update_one({"guilDID" : ctx.guild.id},{"$set" : {"tips" : True}},upsert=True)
         await ctx.send('Enabled Tips!')
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def disable(self,ctx,what):
       if what.lower() == 'rob':
-        await self.collection.update_one({"guildID" : ctx.guild},{"$set" : {"robbing" : False}})
+        await self.collection.update_one({"guildID" : ctx.guild},{"$set" : {"robbing" : False}},upsert=True)
         await ctx.send('Rob Enabled!')
       if what.lower() == 'tips' or what.lower() == 'tip':
-        await self.collection.update_one({"guilDID" : ctx.guild.id},{"$set" : {"tips" : False}})
+        await self.collection.update_one({"guilDID" : ctx.guild.id},{"$set" : {"tips" : False}},upsert=True)
         await ctx.send('Enabled Tips!')
 
     @commands.command(aliases=['DAILY','Daily'])
     @commands.cooldown(1, 86400, commands.BucketType.user) 
     async def daily(self,ctx):
-      bankinfo = await self.collection.find_one({"user": ctx.author.id})
-      if not bankinfo:
-        #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
-
-      else:
-        bankinfo['wallet'] += 1000
+      await self.check_acc(ctx.author)
       await ctx.send('Daily Reward claimed for 1000 fluxes!!!')
     
-      await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
+      await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : 1000}},upsert=False)
 
     @commands.command(aliases=['MONTHLY','Monthly'])
     @commands.cooldown(1, 2628288 , commands.BucketType.user) 
     async def monthly(self,ctx):
-      bankinfo = await self.collection.find_one({"user": ctx.author.id})
-      if not bankinfo:
-        #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
-
-      else:
-        bankinfo['wallet'] += 10000
-      await ctx.send('Daily Reward claimed for 10000 coins!!!')
+      await self.check_acc(ctx.author)
+      await ctx.send('Monthly reward claimed for 10000 coins!!!')
     
-      await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
+      await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : 10000}})
 
     @commands.command(aliases=['WEEKLY','Weekly'])
     @commands.cooldown(1, 604800, commands.BucketType.user) 
@@ -1170,16 +1098,12 @@ class Economy(commands.Cog):
       bankinfo = await self.collection.find_one({"user": ctx.author.id})
       if not bankinfo:
         #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
+        await self.check_acc(ctx.author)
         await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
         return
-
-      else:
-        bankinfo['wallet'] += 5000
-
       await ctx.send('Daily Reward claimed for 5000 coins!!!')
       
-      await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
+      await self.client.economy.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : 5000}},upsert=False)
 
 
               
