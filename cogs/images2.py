@@ -2,39 +2,37 @@ from PIL import Image
 from io import BytesIO
 import discord
 from discord.ext import commands
-import requests
+import aiohttp
 from os import getenv
 
 def killmessages(user, killer, mention):
-	  killmessage = requests.get(f"http://entropi.mythicalkitten.com/KillMessage?user={user}&killer={killer}&mention={mention}", headers={"pass": getenv("pass"), "auth": "GoldLion#0001"}).json()['Message']
+	  killmessage = aiohttp.ClientSession.get(f"http://entropi.mythicalkitten.com/KillMessage?user={user}&killer={killer}&mention={mention}", headers={"pass": getenv("pass"), "auth": "GoldLion#0001"}).json()['Message']
 	  return killmessage
 
 class Slap(commands.Cog):
   def __init__(self,client):
     self.client = client  
 
-
   @commands.command()
   async def slap(self,ctx, user : discord.Member):
-        if user.id == 790525985266597918:
-          return await ctx.send('LMAO imagine trying to slap me')
-
-        else:
-          user = ctx.author if not user else user
-          im = Image.open('./images/slap.png')
-          asset = user.avatar_url_as(format=None, static_format='png', size=128)
-          data = BytesIO(await asset.read())
-          pfp = Image.open(data)
-          asset2 = ctx.author.avatar_url_as(format=None, static_format='png', size=128)
-          data2 = BytesIO(await asset2.read())
-          pfp2 = Image.open(data2)
-          pfp = pfp.resize((300, 300))
-          pfp2 = pfp2.resize((300, 300))
-          im = im.copy()
-          im.paste(pfp, (808, 350))
-          im.paste(pfp2, (500, 60))
-          im.save('./images/slapped.png')
-          await ctx.send(file=discord.File('slapped.png'))
+    if user.id == 790525985266597918:
+      return await ctx.send('LMAO imagine trying to slap me')
+    else:
+      user = ctx.author if not user else user
+      im = Image.open('./images/slap.png')
+      asset = user.avatar_url_as(format=None, static_format='png', size=128)
+      data = BytesIO(await asset.read())
+      pfp = Image.open(data)
+      asset2 = ctx.author.avatar_url_as(format=None, static_format='png', size=128)
+      data2 = BytesIO(await asset2.read())
+      pfp2 = Image.open(data2)
+      pfp = pfp.resize((300, 300))
+      pfp2 = pfp2.resize((300, 300))
+      im = im.copy()
+      im.paste(pfp, (808, 350))
+      im.paste(pfp2, (500, 60))
+      im.save('./images/slapped.png')
+      await ctx.send(file=discord.File('slapped.png'))
 
   @commands.command()
   async def stab(self,ctx,member:discord.Member=None):

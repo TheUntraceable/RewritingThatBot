@@ -1,8 +1,6 @@
-import discord
-from discord.ext import commands, tasks
+import discord,asyncio
+from discord.ext import commands
 from discord.ext.commands import BucketType
-from copy import deepcopy
-from dateutil.relativedelta import relativedelta
 import random
 import datetime
 
@@ -24,92 +22,14 @@ shop = [
 class Economy(commands.Cog):
     def __init__(self, client):
         self.client = client
-        self.heists = self.checkHeist.start()
         self.collection = self.client.economy
     
-    def cog_unload(self):
-        self.heists.cancel()
-
-    @tasks.loop(seconds=15)
-    async def checkHeist(self):
-        heist = deepcopy(self.client.heistdata)
-        for key, value in heist.items():
-            member = value["_id"]
-            member = await self.client.get_user(member)
-            msg = value["messageId"]
-            author = value['author']
-            author = await self.client.get_user(author)
-            currentTime = datetime.datetime.now()
-            guild = self.client.get_guild(value['guildId'])
-            channel = self.client.get_channel(value['channelId'])
-            ctx = discord.utils.get(guild.text_channels, id=value['channelId'])
-            data1 = await self.client.economy.find_one({'_id' : member.id})
-            new_msg = await channel.fetch_message(msg)
-            lost = []
-            win = []
-            unmuteTime = value['started'] + relativedelta(
-                seconds=value['duration'])
-            data = await self.client.economy.find_one({"_id" : author.id})
-            users = await new_msg.reactions[0].users().flatten()
-            users.pop(users.index(self.client.user))
-            if currentTime >= unmuteTime:
-                if len(users) < 2:
-                    await ctx.send("Not enough users joined")
-                    await self.client.heists.delete(member.id)
-                    try:
-                        self.client.heistdata.pop(member.id)
-                    except KeyError:
-                        pass
-                    return
-                for user in users:
-                    await self.check_acc(user)
-                    data = await self.client.economy.find_one({"_id" : user.id})
-                    if data["wallet"] < 1000:
-                        pass
-                    else:
-                        chance = random.randrange(100)
-                        if chance > 75:
-                            lost.append(user)
-                        else:
-                            win.append(user)
-                winings = data1["bank"] / len(win)
-                winings = int(winings)
-                data1["bank"] -= data1["bank"]
-                await self.client.economy.update_one({"user" : user.id},{ "$inc" : {"bank" : winings}},upsert=False)
-                for user in win:
-                    await self.client.economy.update_one({"user" : user.id},{ "$inc" : {"bank" : winings}},upsert=False)
-                    data["wallet"] += winings
-
-                wins = ""
-                for user in win:
-                    wins += f"{user} won {winings} from the heist\n"
-                loses = ""
-                for user in lost:
-                    wins += f"{user} lost the heist :(\n"
-                em = discord.Embed(
-                    title="Heist results on {}'s bank".format(member.name),
-                    color=random.choice(self.client.color_list),
-                    description=wins)
-                if len(loses) == 0:
-                  pass
-                else:
-                    em.add_field(name="People who lost :(", value=loses)
-                await self.client.heists.delete_one({"user.id" : member.id})
-                try:
-                    self.client.heistdata.pop(member.id)
-                except KeyError:
-                    pass
-                await ctx.send(embed=em)
-
-    @checkHeist.before_loop
-    async def before_check_current_mutes(self):
-        await self.client.wait_until_ready()
 
     @commands.command(
         description='b l a c k j a c k', usage='<amount>', aliases=["bj"])
     async def blackjack(self, ctx, amount):
         await self.check_acc(ctx.author)
-        data = await self.client.economy.find(ctx.author.id)
+        data = await self.client.economy.find_one({"user" : ctx.author.id})
         pcards = random.randrange(1, 20)
         bcards = random.randrange(1, 20)
 
@@ -163,7 +83,7 @@ class Economy(commands.Cog):
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
                 data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one(data)
                 return
             em = discord.Embed(
                 title=f"{ctx.author.name}'s blackjack game", color=random.choice(self.client.color_list))
@@ -183,7 +103,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" :ctx.author.id},{"$inc" : {"wallet" : -amount}})
                 return
             else:
                 em = discord.Embed(
@@ -195,7 +115,7 @@ class Economy(commands.Cog):
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
                 data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : amount*2}})
                 return
 
 
@@ -222,7 +142,7 @@ class Economy(commands.Cog):
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
                 data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" : amount*2}})
                 return
             em = discord.Embed(
                 title=f"{ctx.author.name}'s blackjack game", color=random.choice(self.client.color_list))
@@ -241,7 +161,7 @@ class Economy(commands.Cog):
                     color=0xff0000)
                 em.add_field(name=ctx.author.name, value=pcards2)
                 em.add_field(name='BreadBot', value=bcards)
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
                 await ctx.send(embed=em)
                 return
             else:
@@ -254,11 +174,11 @@ class Economy(commands.Cog):
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
                 data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
                 return
 
         msg2 = await self.client.wait_for('message', check=check, timeout=30)
-        if msg2.content == 'hit' or msg2.content == 'Hit':
+        if msg2.content.lower() == 'hit':
             pcards4 = pcards3 + random.randrange(1, 10)
             if pcards4 > 21:
                 em = discord.Embed(
@@ -269,7 +189,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards4)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" : -amount}})
                 return
             if pcards4 == 21:
                 em = discord.Embed(
@@ -281,7 +201,7 @@ class Economy(commands.Cog):
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
                 data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
                 return
             em = discord.Embed(
                 title=f"{ctx.author.name}'s blackjack game", color=random.choice(self.client.color_list))
@@ -301,7 +221,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards3)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" : -amount}})
                 return
             else:
                 em = discord.Embed(
@@ -313,7 +233,7 @@ class Economy(commands.Cog):
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
                 data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
                 return
 
         msg2 = await self.client.wait_for('message', check=check, timeout=30)
@@ -328,7 +248,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards5)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" : -amount}})
                 return
             if pcards5 == 21:
                 em = discord.Embed(
@@ -339,8 +259,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards5)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
                 return
             em = discord.Embed(
                 title=f"{ctx.author.name}'s blackjack game", color=random.choice(self.client.color_list))
@@ -360,7 +279,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards4)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :-amount}})
                 return
             else:
                 em = discord.Embed(
@@ -371,8 +290,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards4)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
                 return
 
 
@@ -388,7 +306,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards6)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" : -amount}})
                 return
             if pcards6 == 21:
                 em = discord.Embed(
@@ -399,8 +317,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards6)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
                 return
             em = discord.Embed(
                 title=f"{ctx.author.name}'s blackjack game",
@@ -410,8 +327,7 @@ class Economy(commands.Cog):
             em.add_field(name=ctx.author.name, value=pcards6)
             em.add_field(name='BreadBot', value=bcards)
             await ctx.send(embed=em)
-            data["wallet"] += 2 * amount
-            await self.client.economy.upsert(data)
+            await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
         elif msg2.content == 'stand' or msg2.content == 'Stand':
             if pcards5 < bcards:
                 em = discord.Embed(
@@ -422,7 +338,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards5)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
                 return
             else:
                 em = discord.Embed(
@@ -433,8 +349,7 @@ class Economy(commands.Cog):
                 em.add_field(name=ctx.author.name, value=pcards5)
                 em.add_field(name='BreadBot', value=bcards)
                 await ctx.send(embed=em)
-                data["wallet"] += 2 * amount
-                await self.client.economy.upsert(data)
+                await self.client.economy.update_one({"user" : ctx.author.id},{"$inc" : {"wallet" :amount*2}})
                 return
 
 
@@ -632,11 +547,62 @@ class Economy(commands.Cog):
             'guildId': ctx.guild.id,
             'author': ctx.author.id,
         }
-        await self.client.heists.insert_one(data)
-        self.client.heistdata[member.id] = data
+        #await self.client.heists.insert_one(data)
+        #self.client.heistdata[member.id] = data
+        await asyncio.sleep(120)
+        users = await msg.reactions[0].users().flatten()
+        lost = []
+        win = []
+        users.pop(users.index(self.client.user))
+        
+        if len(users) < 2:
+          await ctx.send("Not enough users joined")
+          for user in users:
+            await self.check_acc(user)
+            data = await self.client.economy.find_one({"user" : user.id})
+            if data["wallet"] < 1000:
+              pass
+            else:
+              chance = random.randrange(100)
+              if chance > 75:
+                lost.append(user)
+              else:
+                win.append(user)
+            winings = data2["bank"] / len(win)
+            winings = int(winings)
+            await self.client.economy.update_one({"user" : user.id},{ "$inc" : {"bank" : -winings}},upsert=False)
+            for winner in win:
+                await self.client.economy.update_one({"user" : winner.id},{ "$inc" : {"bank" : winings}},upsert=False)
 
+            wins = ""
+            for user in win:
+                wins += f"{user} won {winings} from the heist\n"
+            loses = ""
+            for user in lost:
+                wins += f"{user} lost the heist :(\n"
+            em = discord.Embed(
+                title="Heist results on {}'s bank".format(member.name),
+                color=random.choice(self.client.color_list),
+                description=wins)
+            if len(loses) == 0:
+              pass
+            else:
+                em.add_field(name="People who lost :(", value=loses)
+            await ctx.send(embed=em)
+
+    @commands.command(aliases=["bal"])
+    async def balance(self,ctx,member : discord.Member = False):
+        member = member or ctx.author
+        await self.check_acc(member)
+        data = await self.client.economy.find_one({"user" : member.id})
+        embed = discord.Embed(title=f"{member.display_name}'s Balance.")
+        embed.add_field(name="Wallet - ",value=data["wallet"],inline=True)
+        embed.add_field(name="Bank - ",value=data["bank"],inline=True)
+        embed.add_field(name="Bank Capacity - ",value=data["banklimit"])
+        embed.add_field(name="Passive - ",value="On" if data["passive"] else "Off")
+        await ctx.reply(embed=embed)
     async def check_acc(self, member):
-        data = await self.client.economy.find(member.id)
+        data = await self.client.economy.find_one({"user" : member.id})
         if data:
             return True
         data = {
@@ -650,7 +616,7 @@ class Economy(commands.Cog):
         await self.client.economy.insert_one(data)
 
     async def buy_item(self, member, item_name, amount):
-        data = await self.client.economy.find(member.id)
+        data = await self.client.economy.find_one({"user" : member.id})
         name_ = None
         item_name = item_name.lower()
         for item in shop:
@@ -676,11 +642,11 @@ class Economy(commands.Cog):
         if not iteminbag:
             data["bag"].append({"name": name_["name"], "id": name_["id"], "amount": amount})
             data["wallet"] -= name_["cost"] * amount
-        await self.client.economy.upsert(data)
+            await self.client.economy.update_one({"user" : member.id},{"$inc" : {"wallet" : name_["cost"] * amount}},upsert=False)
         return [True]
     
     async def sell_item(self, member, item_name, amount):
-        data = await self.client.economy.find(member.id)
+        data = await self.client.economy.find_one({"user" : member.id})
         name_ = None
         for item in data["bag"]:
             if item_name in item["id"]:
@@ -707,7 +673,7 @@ class Economy(commands.Cog):
                 if item["amount"] == 0:
                     data["bag"].remove(item)
                 break
-        await self.client.economy.upsert(data)
+        await self.client.economy.update_one({"user" : member.id},{"$set" : {"bag" : data["bag"]}})
         return [True]
 
     @commands.command()
@@ -716,10 +682,7 @@ class Economy(commands.Cog):
 
       bankinfo = await self.collection.find_one({"user": ctx.author.id})
       if not bankinfo:
-        #make new entry
-        await self.collection.insert_one({"user": ctx.author.id, "wallet": 0, "bank": 0,"inventory":{}})
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
+        await self.check_acc(ctx.author)
 
       else:
 
@@ -738,19 +701,17 @@ class Economy(commands.Cog):
 
             if a == b and a == c:
               await ctx.send(f'You Got {a},{b},{c} and you won {amount*2} coins! :sunglasses:')
-
-              bankinfo['wallet'] += amount*2
+              await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : amount*2}})
 
             else: 
 
               await ctx.send(f'You Got {a},{b},{c} and you won {amount} coins! :sunglasses:')
-              bankinfo['wallet'] += amount
+              await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : amount}})
 
           else:
-            bankinfo['wallet'] -= amount
-            await ctx.send(f'You Got {a},{b},{c} and you lost {amount} coins! :cry:')
 
-          await self.collection.replace_one({"user": bankinfo['user']},{"user": bankinfo['user'], "wallet": bankinfo['wallet'], "bank": bankinfo['bank'],"inventory" : bankinfo['inventory']})
+            await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : -amount}})
+            await ctx.send(f'You Got {a},{b},{c} and you lost {amount} coins! :cry:')
 
     @slots.error
     async def slots_error(self,ctx,error):
@@ -1076,7 +1037,7 @@ class Economy(commands.Cog):
         await self.collection.update_one({"guilDID" : ctx.guild.id},{"$set" : {"tips" : False}},upsert=True)
         await ctx.send('Enabled Tips!')
 
-    @commands.command(aliases=['DAILY','Daily'])
+    @commands.command()
     @commands.cooldown(1, 86400, commands.BucketType.user) 
     async def daily(self,ctx):
       await self.check_acc(ctx.author)
@@ -1084,7 +1045,7 @@ class Economy(commands.Cog):
     
       await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : 1000}},upsert=False)
 
-    @commands.command(aliases=['MONTHLY','Monthly'])
+    @commands.command()
     @commands.cooldown(1, 2628288 , commands.BucketType.user) 
     async def monthly(self,ctx):
       await self.check_acc(ctx.author)
@@ -1092,15 +1053,12 @@ class Economy(commands.Cog):
     
       await self.collection.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : 10000}})
 
-    @commands.command(aliases=['WEEKLY','Weekly'])
+    @commands.command()
     @commands.cooldown(1, 604800, commands.BucketType.user) 
     async def weekly(self,ctx):
       bankinfo = await self.collection.find_one({"user": ctx.author.id})
       if not bankinfo:
-        #make new entry
         await self.check_acc(ctx.author)
-        await ctx.send(f'{ctx.author.name} is new, opening new bank account.')
-        return
       await ctx.send('Daily Reward claimed for 5000 coins!!!')
       
       await self.client.economy.update_one({"user": ctx.author.id},{"$inc" : {"wallet" : 5000}},upsert=False)

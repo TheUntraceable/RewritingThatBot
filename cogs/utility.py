@@ -8,10 +8,45 @@ from datetime import datetime
 import asyncio
 from datetime import datetime, timedelta
 import aiohttp
-import paginator, lists
+import paginator
 import humanize
 import pytz
-
+audit_actions = {
+        discord.AuditLogAction.guild_update: "**updated the guild**",
+        discord.AuditLogAction.channel_update: "**updated channel**",
+        discord.AuditLogAction.channel_create: "**created channel**",
+        discord.AuditLogAction.channel_delete: "**deleted channel**",
+        discord.AuditLogAction.overwrite_create: "**created overwrite**",
+        discord.AuditLogAction.overwrite_update: "**updated overwrite**",
+        discord.AuditLogAction.overwrite_delete: "**deleted overwrite**",
+        discord.AuditLogAction.kick: "**kicked**",
+        discord.AuditLogAction.ban: "**banned**",
+        discord.AuditLogAction.unban: "**unbanned**",
+        discord.AuditLogAction.member_role_update: "**updated roles of**",
+        discord.AuditLogAction.member_move: "**moved member**",
+        discord.AuditLogAction.member_disconnect: "**disconnected member**",
+        discord.AuditLogAction.bot_add: "**added bot**",
+        discord.AuditLogAction.role_create: "**created role**",
+        discord.AuditLogAction.role_update: "**updated role**",
+        discord.AuditLogAction.role_delete: "**deleted role**",
+        discord.AuditLogAction.invite_create: "**created invite**",
+        discord.AuditLogAction.invite_update: "**updated invite**",
+        discord.AuditLogAction.invite_delete: "**deleted invite**",
+        discord.AuditLogAction.webhook_create: "**created webhook**",
+        discord.AuditLogAction.webhook_delete: "**deleted webhook**",
+        discord.AuditLogAction.webhook_update: "**updated webhook**",
+        discord.AuditLogAction.emoji_create: "**created emoji**",
+        discord.AuditLogAction.emoji_update: "**updated emoji**",
+        discord.AuditLogAction.emoji_delete: "**deleted emoji**",
+        discord.AuditLogAction.message_delete: "**deleted message by**",
+        discord.AuditLogAction.message_pin: "**pinned a message by**",
+        discord.AuditLogAction.message_unpin: "**unpinned a message by**",
+        discord.AuditLogAction.message_bulk_delete: "**bulk deleted messages**",
+        discord.AuditLogAction.integration_create: "**created integration**",
+        discord.AuditLogAction.integration_delete: "**deleted integration**",
+        discord.AuditLogAction.integration_update: "**updated integration**",
+        discord.AuditLogAction.member_update: "**updated member**"
+        }
 def convert(time):
   pos = ["s","m","h","d"]
 
@@ -39,10 +74,12 @@ numbers = ("1️⃣", "2⃣", "3⃣", "4⃣", "5⃣",
 		   "6⃣", "7⃣", "8⃣", "9⃣", "🔟")
 
 
-class Errors(commands.Cog):
+class Utilities(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.session = aiohttp.ClientSession
+        self.messagem = []
+        self.messager = []
         print("Loaded Utils")
 
     @commands.command()
@@ -217,13 +254,13 @@ class Errors(commands.Cog):
     @commands.command()
     async def about(self, ctx):
         embed = discord.Embed(title="About", description=None )
-        embed.add_field(name="Falc", value="Falc was created by <@489682676157120513>, <@754291348131151902> in colaboration with <@767671037261250593>, <@725322540985090058> and <@562744084964573205>  with a single goal in mind: to be one of the most famous and unique bots in a sea of bots with random bots. Help us achive our goal by adding Falc to your server and also donating to our pateron")
+        embed.add_field(name="Falc", value="Falc was originally thought of by GoldLion and once the code was written, they got me, the Co-Owner, The Untraceable to rewrite the entire bot. To pay respects to The Untraceable for spending her 3 weeks in hell rewriting confusing code, feel free to invite her bot [here](https://dsc.gg/security). 3 Weeks. The goal of the bot is one thing; to be recognised anywhere and everywhere.")
         await ctx.send(embed=embed)
 
     @commands.command()
     async def updates(self, ctx):
         embed = discord.Embed(title="Whats New or Coming Soon!", description=None )
-        embed.add_field(name="Update 1.3", value="```In this Update, we fixed minor bugs in the currency commands and fixed that pesky json file for prefixes. A TON of more commands were added to every single catergory from create channel to create role to timer and more fun commands!```")
+        embed.add_field(name="Update 2.0", value="``Entire bot has been rewrote, you probably lost your data but it's alright, because everyone probably has, anyways that's all, I'll add more updates later.```")
         embed.add_field(name="Coming Soon: Update 1.4", value="```Soon, the timer will be integrated with the giveaway command so that you can see the amount of time left on your giveaway!```")
         await ctx.send(embed=embed)
 
@@ -353,7 +390,7 @@ class Errors(commands.Cog):
 
     @commands.command()
     async def credits(self, ctx):
-      await ctx.send("Credits to: NightZan#9999 for my ticket system, billyeatcookies#0173 for the among us mini game. Not to forget, the person I owe the most to, Nirlep_5252_#0001. Thanks for your games command. Another thank to The Untraceable#4852 for rewriting the entire bot. If you think that your name should be here, please dont hesitate to dm me (@GoldLion#8190)")
+      await ctx.send("Credits to: NightZan#9999 for my ticket system, billyeatcookies#0173 for the among us mini game. Not to forget, the person I owe the most to, Nirlep_5252_#0001. Thanks for your games command. Another thank to The Untraceable#4852 for rewriting the entire bot, you're a Co-Owner so yay. If you think that your name should be here, please dont hesitate to dm me (@GoldLion#8190)")
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(aliases = ['covid-19', 'covid19'])
@@ -788,7 +825,7 @@ class Errors(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['createinvite', 'generateinvite'])
-    @commands.has_perrmissions(create_instant_invite=True)
+    @commands.has_permissions(create_instant_invite=True)
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def makeinvite(self, ctx, channel = None, max_age=0, max_uses=0, temporary=False, *, reason=None):
         """Make an invite for the current channel (if none is specified).  Takes in max_age (int, days), max_uses (int),  temporary membership (True/False), and a reason for creation.  Cooldown: 30 seconds"""
@@ -811,21 +848,6 @@ class Errors(commands.Cog):
           embed = discord.Embed(title="Invite Creation Failed", value="Please check to make sure your values are valid.  (**max_age** and **max_uses** should be an int >= 0, **temporary** should be True or False, and **reason**   should be a str.",color=0xff0000)
           await ctx.send(embed=embed)
 
-    @commands.command(aliases=['audit'])
-    @commands.has_permissions(view_audit_log=True)
-    async def auditlog(self, ctx, limit: int = 20):
-        try:
-            actions = []
-            async for x in ctx.guild.audit_logs(limit=limit):
-                actions.append(
-                    f"{x.user.name} {lists.audit_actions[x.action]} {x.target} ({humanize.naturaltime(__import__('datetime').datetime.utcnow() - x.created_at)})")
-            source = paginator.IndexedListSource(embed=discord.Embed(colour=self.client.colour).set_author(
-                name=f"Last Audit Log Actions for {ctx.guild}",
-                icon_url="https://cdn.discordapp.com/emojis/446847139977625620.png?v=1"), data=actions)
-            menu = paginator.CatchAllMenu(source=source)
-            await menu.start(ctx)
-        except Exception as er:
-            await ctx.send(f'{er.__class__.__name__}, {er}')
 
     @commands.command()
     async def time(self, ctx, name=""):
@@ -869,10 +891,9 @@ class Errors(commands.Cog):
             tz = pytz.timezone("Asia/Kolkata")
         else:
             await ctx.send("Invalid Name")
-            check = 0
-        if check == 1:
-            today = datetime.datetime.now(tz)
-            await ctx.send(today.strftime("%d-%m-%Y | %I:%M:%S %p"))
+            return
+        today = datetime.datetime.now(tz)
+        await ctx.send(today.strftime("%d-%m-%Y | %I:%M:%S %p"))
 
     @commands.command(name='randcolour',
                       aliases=['randcolor'])
@@ -883,5 +904,5 @@ class Errors(commands.Cog):
 
 
 
-def setup(bot):
-  bot.add_cog(Errors(bot))
+def setup(client):
+  client.add_cog(Utilities(client))

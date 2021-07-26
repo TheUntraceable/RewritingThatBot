@@ -7,9 +7,28 @@ from random import choice
 import secrets
 from discord.ext import commands
 from discord.ext.commands import BucketType
-import cyberformat, paginator
+import paginator
 from async_timeout import timeout
 
+def hyper_replace(text, old: list, new: list):
+    """
+    Allows you to replace everything you need in one function using two lists.
+    :param text:
+    :param old:
+    :param new:
+    :return:
+    """
+    msg = str(text)
+    for x, y in zip(old, new):
+        msg = str(msg).replace(x, y)
+    return msg
+
+
+def shorten(s: str):
+    if len(s) >= 2000:
+        return s[:-3] + "..."
+    else:
+        return s
 class Fun(commands.Cog):
     def __init__(self, client):
         self.client = client
@@ -359,9 +378,7 @@ class Fun(commands.Cog):
         url = "https://api.adviceslip.com/advice"
         response = await self.session.get(url)
         advice = await response.json()
-        await self.session.close()
-        real_advice = advice['slip']['advice']
-        await ctx.message.reply(real_advice)
+        await ctx.reply(advice['slip']['advice'])
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command()
@@ -379,8 +396,7 @@ class Fun(commands.Cog):
           'https://cdn.discordapp.com/attachments/771670448710483981/831450860545769492/unknown.png', 'https://cdn.discordapp.com/attachments/771670448710483981/836616062933270538/unknown.png', 'https://cdn.discordapp.com/attachments/771670448710483981/836616045070254120/unknown.png'
           )
         resultss = f"{random.choice(results)}"
-        await ctx.message.reply(resultss)
-        await ctx.send("**<@490867362430713876> fuck off 7 year old pussy ass tik tok consuming scum mallu scamming filth bloody bastard bitch begging motherfucker pedophile cunt**")
+        await ctx.reply(resultss)
 
     @commands.cooldown(1, 15, commands.BucketType.user)
     @commands.command()
@@ -430,48 +446,37 @@ class Fun(commands.Cog):
             msg1 = await ctx.send("Initializing Hack.exe... <a:3859_Loading:754710375446085754>")
             await asyncio.sleep(2)
 
-            real_msg1 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg1.edit(content = f"Successfully initialized Hack.exe, beginning hack on {user.name}... <a:3859_Loading:754710375446085754>")
+            await msg1.edit(content = f"Successfully initialized Hack.exe, beginning hack on {user.name}... <a:3859_Loading:754710375446085754>")
             await asyncio.sleep(2)
 
-            real_msg2 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg2.edit(content = f"Logging into {user.name}'s Discord Account... <a:3859_Loading:754710375446085754>")
+            await msg1.edit(content = f"Logging into {user.name}'s Discord Account... <a:3859_Loading:754710375446085754>")
             await asyncio.sleep(2)
 
-            real_msg3 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg3.edit(content = f"<a:discord_loading~1:745047586552938516> Logged into {user.name}'s Discord:\nEmail Address: `{email_address}`\nPassword: `{password}`")
+            await msg1.edit(content = f"<a:discord_loading~1:745047586552938516> Logged into {user.name}'s Discord:\nEmail Address: `{email_address}`\nPassword: `{password}`")
             await asyncio.sleep(2)
 
-            real_msg4 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg4.edit(content = f"Fetching DMs from their friends(if there are any)... <a:3859_Loading:754710375446085754>")
+            await msg1.edit(content = f"Fetching DMs from their friends(if there are any)... <a:3859_Loading:754710375446085754>")
             await asyncio.sleep(2)
 
-            real_msg5 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg5.edit(content = f"Latest DM from {user.name}: `{latest_DM}`")
+            await msg1.edit(content = f"Latest DM from {user.name}: `{latest_DM}`")
             await asyncio.sleep(2)
 
-            real_msg6 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg6.edit(content = f"Getting IP address... <a:3859_Loading:754710375446085754>")
+            await msg1.edit(content = f"Getting IP address... <a:3859_Loading:754710375446085754>")
             await asyncio.sleep(2)
 
-            real_msg7 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg7.edit(content = f"IP address found: `{ip_address}`")
+            await msg1.edit(content = f"IP address found: `{ip_address}`")
+            await asyncio.sleep(2)
+            
+            await msg1.edit(content = f"Fetching the Most Used Discord Server... <a:3859_Loading:754710375446085754>")
             await asyncio.sleep(2)
 
-            real_msg11 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg11.edit(content = f"Fetching the Most Used Discord Server... <a:3859_Loading:754710375446085754>")
+            await msg1.edit(content = f"Most used Discord Server in {user.name}'s Account: `{Most_Used_Discord_Server}`")
             await asyncio.sleep(2)
 
-            real_msg10 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg10.edit(content = f"Most used Discord Server in {user.name}'s Account: `{Most_Used_Discord_Server}`")
+            await msg1.edit(content = f"Selling data to the dark web... <a:3859_Loading:754710375446085754>")
             await asyncio.sleep(2)
-
-            real_msg8 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg8.edit(content = f"Selling data to the dark web... <a:3859_Loading:754710375446085754>")
-            await asyncio.sleep(2)
-
-            real_msg9 = await ctx.channel.fetch_message(msg1.id)
-            await real_msg9.edit(content = f"Hacking complete.")
+            
+            await msg1.edit(content = f"Hacking complete.")
             await ctx.send(f"{user.name} has successfully been hacked. <a:Tick:827851647463718963>\n\n**{user.name}**'s Data:\nDiscord Email: `{email_address}`\nDiscord Password: `{password}`\nMost used Discord Server: `{Most_Used_Discord_Server}`\nIP Address: `{ip_address}`\nLatest DM: `{latest_DM}`")
 
     @commands.command()
@@ -1013,7 +1018,7 @@ class Fun(commands.Cog):
             embeds = []
             async with ctx.typing():
                 for s in random.sample(posts, len(posts)):
-                    text = cyberformat.shorten(f"{s['title']}\n{s['selftext']}")
+                    text = shorten(f"{s['title']}\n{s['selftext']}")
                     embeds.append(discord.Embed(description=text[:2000], colour=self.client.colour))
                     counter += 1
                     if counter == limit:
@@ -1027,7 +1032,7 @@ class Fun(commands.Cog):
     @commands.command()
     async def echo(self, ctx, channel: discord.TextChannel, *, message):
         await channel.send(
-            cyberformat.hyper_replace(text=message, old=['@everyone', '@here'], new=['@\u200beveryone', '@\u200bhere']))
+            hyper_replace(text=message, old=['@everyone', '@here'], new=['@\u200beveryone', '@\u200bhere']))
         await ctx.message.add_reaction(emoji="<:tickYes:845618396007759893>")
 
     @commands.command(aliases=['gt'])

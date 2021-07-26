@@ -6,9 +6,39 @@ from games import ttt, wumpus, minesweeper, twenty
 from async_timeout import timeout
 import aiohttp
 from discord.ext import commands
-import cyberformat, lists
 from html import unescape as unes
 import json
+async def better_random_char(s: str, c: str = None):
+    return "".join(random.choice([b, c or b.upper()]) for b in s)
+ALPHABET_NUMBER = {
+    "A": 1,
+    "B": 2,
+    "C": 3,
+    "D": 4,
+    "E": 5,
+    "F": 6,
+    "G": 7,
+    "H": 8,
+    "I": 9,
+    "J": 10,
+    "K": 11,
+    "L": 12,
+    "M": 13,
+    "N": 14,
+    "O": 15,
+    "P": 16,
+    "Q": 17,
+    "R": 18,
+    "S": 19,
+    "T": 20,
+    "U": 21,
+    "V": 22,
+    "W": 23,
+    "X": 24,
+    "Y": 25,
+    "Z": 26
+}
+NUMBER_ALPHABET = {value: key for (key, value) in ALPHABET_NUMBER.items()}
 
 def dagpi():
     with open("secrets.json", "r") as f:
@@ -204,7 +234,7 @@ class Games(commands.Cog):
                 answers.append(unes(data['correct_answer']))
                 random.shuffle(answers)
                 for numb, ans in enumerate(answers, 1):
-                    an.append(f'{lists.NUMBER_ALPHABET[numb]}) **{ans}**')
+                    an.append(f'{NUMBER_ALPHABET[numb]}) **{ans}**')
                 yup = '\n'.join(an)
                 embed = discord.Embed(title=unes(data["question"]),
                                       description=f"{yup}",
@@ -214,7 +244,7 @@ class Games(commands.Cog):
                 embed.add_field(name="Question Info",
                                 value=f"This question about **{unes(data['category'])}** is of **{unes(data['difficulty']).capitalize()}** difficulty")
                 embed.set_footer(text="https://opentdb.com")
-                letter_ans = lists.NUMBER_ALPHABET[answers.index(''.join(unes(data['correct_answer']))) + 1]
+                letter_ans = NUMBER_ALPHABET[answers.index(''.join(unes(data['correct_answer']))) + 1]
                 lower = str(letter_ans).lower()
                 message = await ctx.send("** **", embed=embed)
                 async with timeout(15):
@@ -336,7 +366,7 @@ class Games(commands.Cog):
                 embed.title = "Who's that Pokémon?"
                 embed.description = f"You have 3 attempts | You have 30 seconds\nYou can ask for a hint by doing `{ctx.prefix}hint`, or cancel by doing `{ctx.prefix}cancel`!"
                 await ctx.send(embed=embed)
-                dashes = await cyberformat.better_random_char(pokemon['name'], '_')
+                dashes = await better_random_char(pokemon['name'], '_')
                 hints = [
                     discord.Embed(colour=self.client.colour, title="Types", description=', '.join(pokemon['type'])),
                     discord.Embed(title=f"`{dashes}`", colour=self.client.colour),

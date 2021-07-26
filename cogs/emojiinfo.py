@@ -56,5 +56,5 @@ class EmojiInfo(commands.Cog):
         await ctx.send(embed=embed)
 
 
-def setup(bot):
-    bot.add_cog(EmojiInfo(bot))
+def setup(client):
+    client.add_cog(EmojiInfo(client))

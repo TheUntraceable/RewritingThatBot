@@ -19,7 +19,7 @@ class afk(commands.Cog):
             data = await self.client.afk.find_one({"memberID" : mention.id})
             if not data:
                 pass
-            msgs = f"{msg.name} is AFK with reason : {data['reason']}"
+            msgs = f"{mention.name} is AFK with reason : {data['reason']}"
             await msg.channel.send(msgs)
 
         CheckForAuthor = await self.client.afk.find_one({"memberID" : msg.author.id})

@@ -10,17 +10,15 @@ import motor.motor_asyncio
 from dotenv import load_dotenv
 
 load_dotenv()
-cluster = motor.motor_asyncio.AsyncIOMotorClient("mongodb+srv://untraceable:MGCLANUPINHERE21@database.hdgmq.mongodb.net/database?retryWrites=true&w=majority")
-print(cluster)
+cluster = motor.motor_asyncio.AsyncIOMotorClient("mongodb+srv://untraceable:mKFDsMJBzDmlebNr@database.s6qen.mongodb.net/database?retryWrites=true&w=majority")
 db  = cluster["discord"]["prefixes"]
 
 async def get_prefix(client, message):
     data = await db.find_one({"guildID" : message.guild.id})
-    prefix = data["prefix"] or "f!"
+    prefix = data["prefix"] if data["prefix"] is not None else "f!"
     return prefix
 
-client = commands.Bot(command_prefix=get_prefix, intents = discord.Intents().all(), case_insensitive=True,)
-cluster = motor.motor_asyncio.AsyncIOMotorClient("mongodb+srv://untraceable:mKFDsMJBzDmlebNr @database.s6qen.mongodb.net/database?retryWrites=true&w=majority")
+client = commands.AutoShardedBot(command_prefix=get_prefix,allowed_mentions=discord.AllowedMentions(roles=False,users=True,replied_user=True,everyone=False), intents = discord.Intents.all(), case_insensitive=True)
 client.afk  = cluster["discord"]["afk"]
 client.prefixes = cluster["discord"]["prefixes"]
 client.bdays = cluster["discord"]["bdays"]
@@ -37,10 +35,11 @@ client.nqn = cluster["discord"]["nqn"]
 client.reactroles = cluster['discord']['reactroles']
 client.tickets = cluster['discord']['tickets']
 client.remove_command("help")
+'''
 @client.command()
 @commands.is_owner()
 async def MoveToMongo(ctx):
-    with open("prefixes.json","r") as f:
+    with open("./DontKnowWhatToDoWith/prefixes.json","r") as f:
         data = json.load(f)
     prefixes = []
     async with ctx.typing():
@@ -56,17 +55,10 @@ async def MoveToMongo(ctx):
                     "prefixes" : [  prefixes]
                 })
         await ctx.send("Uploaded all prefixes to MongoDB")
+'''
 @client.event
 async def on_guild_join(guild):
     await client.prefixes.insert_one({"guildID": guild.id,"prefix" : ["f!"] })
-@client.command(name="pfp", description="Displays your pfp")
-async def pfp(ctx,member : discord.Member):
-    embed = discord.Embed(
-        title=f"{member.display_name or ctx.author.display_name}'s Avatar",
-        color=discord.Color.teal()
-    ).set_image(url=ctx.author.avatar_url)
-
-    await ctx.reply(embed=embed)
 
 
 
@@ -74,8 +66,8 @@ async def pfp(ctx,member : discord.Member):
 async def on_message(message):
     if message.author.bot:
         return
-    data = await client.db.find_one({"guildID" : message.guild.id}) 
-    pre = data["prefix"] or "f!"
+    data = await client.prefixes.find_one({"guildID" : message.guild.id}) 
+    pre = data["prefix"] if data["prefix"] != None else "f!"
     if message.content in (f"<@790525985266597918>", f"<@!790525985266597918>"):
         embed = discord.Embed(title=f"Need some help?", description= f"Use the following for help:\n`{pre}help`\nThe prefix for this server is:\n`{pre}`\nIf you would like to change the prefix, use `{pre}setprefix <prefix>`",
         color = discord.Colour.blue())
@@ -105,7 +97,7 @@ async def on_message(message):
 
 @client.command(name="rate", description="Rate something")
 async def _rate(ctx, *, thing: commands.clean_content):
-    rate_amount = random.uniform(0.0, 100.0)
+    rate_amount = random.randrange(0, 100)
     await ctx.reply(f"I'd rate `{thing}` a **{round(rate_amount, 4)} / 100**")
 
 
@@ -115,6 +107,7 @@ async def _cat(ctx):
         async with session.get("https://api.thecatapi.com/v1/images/search") as resp:
             r = await resp.json() 
             await session.close()
+    print(r)
     cat_em = discord.Embed(title=':cat: Meow',colour=discord.Colour.blue())
     cat_em.set_image(url=f'{r[0]["url"]}')
 
@@ -144,19 +137,13 @@ async def _panda(ctx):
 
     await ctx.reply(embed=cat_em)
 
-@client.command(name="meme", description="Get a dank meme")
-async def _meme(ctx):
-    value = random.randint(1, 2000)
-    embed = discord.Embed(title = "Dank Meme", description = "LMAO", colour = 0x329999)
-    embed.set_image(url = f"https://ctk-api.herokuapp.com/meme/{value}")
-    await ctx.reply(embed=embed)
-
 @client.command(name="fox", description="Get a fox picture")
 async def _fox(ctx):
     async with aiohttp.ClientSession() as session:
         async with session.get("https://some-random-api.ml/img/fox") as resp:
             r = await resp.json()
             await session.close()
+        print(r)
     cat_em = discord.Embed(title='fox: what a cute fox!', colour=discord.Colour.blue())
     cat_em.set_image(url=f'{r[0]["link"]}')
 
@@ -164,10 +151,10 @@ async def _fox(ctx):
 
 @client.event
 async def on_guild_remove(guild):
-    await client.db.delete_one({"guildID" : guild.id})
+    await client.prefixes.delete_one({"guildID" : guild.id})
 
 for fn in os.listdir('./cogs'):
-    if fn.endswith('.py') and fn != 'global_functions.py':
+    if fn.endswith('.py') and fn != 'global_functions.py' and fn != "discordlist.py":
         client.load_extension(f'cogs.{fn[:-3]}')
 
 
@@ -196,9 +183,9 @@ async def load(ctx, extension):
     await ctx.reply(f"Loaded {extension}")
 @client.command()
 @commands.is_owner()
-async def restart(ctx, extension):
+async def reload(ctx, extension):
     client.reload_extension(f'cogs.{extension}')
-    await ctx.reply(f'Restarted {extension}')
+    await ctx.reply(f'Reloaded {extension}')
 @client.command()
 @commands.is_owner()
 async def unload(ctx, extension):
@@ -223,7 +210,7 @@ async def check(ctx, cog_name):
 client.launch_time = datetime.utcnow()
 
 
-@client.command(case_insensitive = True, aliases = ["remind", "remindme", "remind_me"])
+@client.command(aliases = ["remind", "remindme", "remind_me"])
 @commands.bot_has_permissions(attach_files = True, embed_links = True)
 async def reminder(ctx, time, *, reminder):
     embed = discord.Embed(color=0x55a7f7)
@@ -258,8 +245,8 @@ async def reminder(ctx, time, *, reminder):
 
 @reminder.error
 async def reminder_error(ctx, error):
-    data = await client.db.find_one({"guildID" : ctx.guild.id})
-    prefix = data["prefix"]
+    data = await client.prefixes.find_one({"guildID" : ctx.guild.id})
+    prefix = data["prefix"][0]
     if isinstance(error, commands.MissingRequiredArgument):
         embed=discord.Embed(title='❌Error, missing required arguments:', description=f'{prefix}remind [Duration] [Reminder]', colour=discord.Colour.red())
         embed.add_field(name='Example:',value=f'{prefix}remind 10h play games')
@@ -307,21 +294,18 @@ def convert(time):
 
 
 @client.command()
-@commands.is_owner(name = True)
+@commands.is_owner()
 async def dm(ctx, member: discord.Member = None, *, text = None):
     if not member:
         return await ctx.author.send("You didn't supply a member to DM that to.")
     if not text:
         return await ctx.author.send("I can't DM nothing.")
-    await member.send(f"{text}")
+    await member.send(text)
     await ctx.channel.purge(limit=1)
 
 @client.event
 async def on_ready():
   print("READY")
-@client.command(name="ping", description= "Shows the bots ping")
-async def _ping(ctx): 
-    await ctx.reply(f"Pong! ({client.latency*1000}ms)")
 
 @client.command()
 async def face(ctx):
@@ -759,8 +743,7 @@ async def face(ctx):
 
 @client.command()
 async def rps(ctx):
-    try:
-        await ctx.message.delete()
+    #try:
         rpsEmbed = discord.Embed(color=random.randint(
             0, 0xffffff))
         rpsEmbed.add_field(name='Rock', value='\U0001faa8')
@@ -768,134 +751,61 @@ async def rps(ctx):
         rpsEmbed.add_field(name='Scissors', value='\U00002702')
         rpsEmbed.set_footer(text='The message will be deleted after 1 minute')
         question_choose = await ctx.reply(embed=rpsEmbed)
+        
         await question_choose.add_reaction('\U0001faa8')
         await question_choose.add_reaction('\U0001f4dc')
         await question_choose.add_reaction('\U00002702')
-        reaction, user = await client.wait_for('reaction_add', check=lambda reaction, user: user == ctx.author and str(reaction.emoji), timeout=60)
-        # list of selects 1# scissors 2# rock 3# paper
+        #             scissors        rock          paper
         selects = [u'\U00002702', u'\U0001faa8', u'\U0001f4dc']
+        scissors = '\U00002702'; rock = '\U0001faa8'; paper = '\U0001f4dc'
+        try:
+            reaction, user = await client.wait_for('reaction_add', check=lambda reaction, user: user == ctx.author and str(reaction.emoji) in selects and reaction.message.id == question_choose.id, timeout=60)
+        except asyncio.TimeoutError:
+            return await ctx.send("You took too long to reply. Anyways I won.")
         # choose random sleects from the list
         bot_select = random.choice(selects)
         user_select = str(reaction.emoji)
-        if str(user_select) == str(bot_select):
+        if str(bot_select) == rock and str(user_select) == scissors or str(bot_select) == paper and str(user_select) == rock or str(bot_select) == scissors and str(user_select) == paper:
             await question_choose.delete()
-            # change the string select to a emoji
-            if str(bot_select) == u'\U00002702':
-                choose_embed = discord.Embed(color=0x2ecc71)
-                choose_embed.add_field(
-                    name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
-                choose_embed.add_field(
-                    name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
-                choose_embed.set_author(
-                    name='Tie!', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/microsoft/209/anticlockwise-downwards-and-upwards-open-circle-arrows_1f504.png')
-                choose_embed.set_footer(
-                    text=ctx.author.name, icon_url=ctx.author.avatar_url)
-                await ctx.reply(embed=choose_embed)
-            elif str(bot_select) == u'\U0001faa8':
-                choose_embed = discord.Embed(color=0x2ecc71)
-                choose_embed.add_field(
-                    name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
-                choose_embed.add_field(
-                    name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
-                choose_embed.set_author(
-                    name='Tie!', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/microsoft/209/anticlockwise-downwards-and-upwards-open-circle-arrows_1f504.png')
-                choose_embed.set_footer(
-                    text=ctx.author.name, icon_url=ctx.author.avatar_url)
-                await ctx.reply(embed=choose_embed)
-            # same
-            elif str(bot_select) == u'\U0001f4dc':
-                choose_embed = discord.Embed(color=0x2ecc71)
-                choose_embed.add_field(
-                    name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
-                choose_embed.add_field(
-                    name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
-                choose_embed.set_author(
-                    name='Tie!', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/microsoft/209/anticlockwise-downwards-and-upwards-open-circle-arrows_1f504.png')
-                choose_embed.set_footer(
-                    text=ctx.author.name, icon_url=ctx.author.avatar_url)
-                await ctx.reply(embed=choose_embed)
-        elif str(user_select) == u'\U0001faa8':
+            choose_embed = discord.Embed(color=0x2ecc71)
+            choose_embed.add_field(
+                name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
+            choose_embed.add_field(
+                name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
+            choose_embed.set_author(
+                name='I won!!', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
+            choose_embed.set_footer(
+                text=ctx.author.name, icon_url=ctx.author.avatar_url)
+            await ctx.reply(embed=choose_embed)
+        if str(user_select) == rock and str(bot_select) == scissors or str(user_select) == paper and str(bot_select) == rock or str(user_select) == scissors and str(bot_select) == paper:
             await question_choose.delete()
-            if str(bot_select) == u'\U00002702':
-                choose_embed = discord.Embed(color=0x2ecc71)
-                choose_embed.add_field(
-                    name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
-                choose_embed.add_field(
-                    name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
-                choose_embed.set_author(
-                    name='You Win!', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/check-mark-button_2705.png')
-                choose_embed.set_footer(
-                    text=ctx.author.name, icon_url=ctx.author.avatar_url)
-                await ctx.reply(embed=choose_embed)
-            elif str(bot_select) == u'\U0001f4dc':
-                choose_embed = discord.Embed(color=0x2ecc71)
-                choose_embed.add_field(
-                    name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
-                choose_embed.add_field(
-                    name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
-                choose_embed.set_author(
-                    name='You Lose!', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
-                choose_embed.set_footer(
-                    text=ctx.author.name, icon_url=ctx.author.avatar_url)
-                await ctx.reply(embed=choose_embed)
-        elif str(user_select) == u'\U0001f4dc':
+            choose_embed = discord.Embed(color=0x2ecc71)
+            choose_embed.add_field(
+                name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
+            choose_embed.add_field(
+                name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
+            choose_embed.set_author(
+                name='You won!!', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
+            choose_embed.set_footer(
+                text=ctx.author.name, icon_url=ctx.author.avatar_url)
+            await ctx.reply(embed=choose_embed)
+        elif str(user_select) == str(bot_select):
             await question_choose.delete()
-            if str(bot_select) == u'\U0001faa8':
-                choose_embed = discord.Embed(color=0x2ecc71)
-                choose_embed.add_field(
-                    name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
-                choose_embed.add_field(
-                    name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
-                choose_embed.set_author(
-                    name='You Win!', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/check-mark-button_2705.png')
-                choose_embed.set_footer(
-                    text=ctx.author.name, icon_url=ctx.author.avatar_url)
-                await ctx.reply(embed=choose_embed)
-            elif str(bot_select) == u'\U00002702':
-                choose_embed = discord.Embed(color=0x2ecc71)
-                choose_embed.add_field(
-                    name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
-                choose_embed.add_field(
-                    name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
-                choose_embed.set_author(
-                    name='You Lose!', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
-                choose_embed.set_footer(
-                    text=ctx.author.name, icon_url=ctx.author.avatar_url)
-                await ctx.reply(embed=choose_embed)
-        elif str(user_select) == u'\U00002702':
-            await question_choose.delete()
-            if str(bot_select) == u'\U0001faa8':
-                choose_embed = discord.Embed(color=0x2ecc71)
-                choose_embed.add_field(
-                    name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
-                choose_embed.add_field(
-                    name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
-                choose_embed.set_author(
-                    name='You Lose!', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
-                choose_embed.set_footer(
-                    text=ctx.author.name, icon_url=ctx.author.avatar_url)
-                await ctx.reply(embed=choose_embed)
-            elif str(bot_select) == u'\U0001f4dc':
-                choose_embed = discord.Embed(color=0x2ecc71)
-                choose_embed.add_field(
-                    name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
-                choose_embed.add_field(
-                    name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
-                choose_embed.set_author(
-                    name='You Win!', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/check-mark-button_2705.png')
-                choose_embed.set_footer(
-                    text=ctx.author.name, icon_url=ctx.author.avatar_url)
-                await ctx.reply(embed=choose_embed)
-    except asyncio.TimeoutError:
-        await question_choose.delete()
-        timeout = await ctx.reply('Lucky for you I was made for my time to be wasted. Next time ***respond***')
-        await timeout.delete(delay=10)
-
+            choose_embed = discord.Embed(color=0x2ecc71)
+            choose_embed.add_field(
+                name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
+            choose_embed.add_field(
+                name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
+            choose_embed.set_author(
+                name='We Drew!!', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
+            choose_embed.set_footer(
+                text=ctx.author.name, icon_url=ctx.author.avatar_url)
+            await ctx.reply(embed=choose_embed)
+        
 @client.command(aliases=['flip', 'flipping'])
 async def flip_command(ctx):
     try:
         cancel = False
-        await ctx.message.delete()
         EmbedHead = discord.Embed(
             description='What you choose? (Heads/Tails)', color=random.randint(0, 0xffffff))
         EmbedHead.set_footer(text='You have 1 minute to choose!')
@@ -904,11 +814,11 @@ async def flip_command(ctx):
         if str(message.content.lower()) == 'heads':
             user_choose = message.content
             await message.delete()
-            fliping = await ctx.reply(f'Flipping. ')
-            await asyncio.sleep(1)
-            await fliping.edit(content=f'Flipping.. ')
-            await asyncio.sleep(1)
-            await fliping.edit(content=f'Flipping... ')
+            fliping = await ctx.reply('Flipping. ')
+            await asyncio.sleep(0.4)
+            await fliping.edit(content='Flipping.. ')
+            await asyncio.sleep(0.5)
+            await fliping.edit(content='Flipping... ')
             chooses = ['heads', 'tails']
             random_select = random.choice(chooses)
             await fliping.delete()
@@ -976,12 +886,6 @@ async def flip_command(ctx):
     except asyncio.TimeoutError:
         if not cancel:
             await headORtail.edit(content='Lucky for you I was made for my time to be wasted. Next time **respond**')
-
-#@client.event
-#async def on_command_error(ctx, error):
- #   if isinstance(error, commands.MissingPermissions):
-  #    embed = discord.Embed(title="Invalid Permisssions!", description="Please make sure you have perms", c#olour=discord.Colour.blue())
-    #  await ctx.send(embed=embed)
 
 
 @client.command(aliases=["pfp"])
@@ -1117,5 +1021,5 @@ async def wyr(ctx):
 
 #response = requests.post(f'https://space-bot-list.xyz/api/bots/{489682676157120513}', headers = {"Authorization": "942292990d0fe954c70e539429ee8ac6e3cb55100bcfb798acb6b3046120c233f243b2417b6fe49e21303c2cac30860a", "Content-Type": "application/json"})
 # have no clue what that is for
-my_secret = os.environ.get("TOKEN")
-client.run(my_secret)
+client.load_extension("jishaku")
+client.run("ODUzNTkxOTg0NTU5MzU3OTcz.YMXnfA.tYiEulI20uGiqH8pF9mbyTaB4Zk")

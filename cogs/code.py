@@ -92,5 +92,5 @@ class CodeExec(commands.Cog):
         )
 
 
-def setup(bot: commands.Bot):
-    bot.add_cog(CodeExec(bot))
+def setup(client: commands.Bot):
+    client.add_cog(CodeExec(client))

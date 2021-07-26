@@ -3,7 +3,7 @@ from discord.ext.commands import BucketType
 import json, random, discord, asyncio
 
 # conversation data
-with open("possibilities.json", "r") as f:
+with open("./cogs/possibilities.json", "r") as f:
     possibilities = json.load(f)
     player_red = possibilities['Red']
     player_orange = possibilities['Orange']

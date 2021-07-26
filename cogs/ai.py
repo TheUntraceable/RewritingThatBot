@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands
 from prsaw import RandomStuff
 #Get an API Key at https://api-info.pgamerx.com/register.html/ for free
