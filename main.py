@@ -35,7 +35,7 @@ client.nqn = cluster["discord"]["nqn"]
 client.reactroles = cluster['discord']['reactroles']
 client.tickets = cluster['discord']['tickets']
 client.remove_command("help")
-'''
+
 @client.command()
 @commands.is_owner()
 async def MoveToMongo(ctx):
@@ -45,8 +45,9 @@ async def MoveToMongo(ctx):
     async with ctx.typing():
         for guild,prefix in data:
             existing = await client.prefixes.find_one({
-                "guildID" : ctx.guild.id
+                "guildID" : guild
             })
+            
             prefixes.append(prefix)
             
             if not existing:
@@ -55,11 +56,9 @@ async def MoveToMongo(ctx):
                     "prefixes" : [  prefixes]
                 })
         await ctx.send("Uploaded all prefixes to MongoDB")
-'''
 @client.event
 async def on_guild_join(guild):
     await client.prefixes.insert_one({"guildID": guild.id,"prefix" : ["f!"] })
-
 
 
 @client.event
@@ -68,7 +67,7 @@ async def on_message(message):
         return
     data = await client.prefixes.find_one({"guildID" : message.guild.id}) 
     pre = data["prefix"] if data["prefix"] != None else "f!"
-    if message.content in (f"<@790525985266597918>", f"<@!790525985266597918>"):
+    if client.user.mentioned_in(message):
         embed = discord.Embed(title=f"Need some help?", description= f"Use the following for help:\n`{pre}help`\nThe prefix for this server is:\n`{pre}`\nIf you would like to change the prefix, use `{pre}setprefix <prefix>`",
         color = discord.Colour.blue())
         await message.channel.send(embed=embed)
@@ -90,7 +89,7 @@ async def on_message(message):
     if message.content == 'ninenine':
         response = random.choice(brooklyn_99_quotes)
         await message.channel.send(response)
-
+    data = await client.blacklist.find_one({"_id" : message.author.id})
 
     await client.process_commands(message)
 

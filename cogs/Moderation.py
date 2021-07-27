@@ -32,7 +32,8 @@ class Moderation(commands.Cog):
           msg = 'This command on cooldown please try again in {:.2f}s!'.format(
             error.retry_after)
           await ctx.send(msg)
-
+        else:
+            raise error
 # Commands
     @commands.command(aliases = ['boot', 'yeet'])
     @commands.bot_has_permissions(kick_members=True)
@@ -180,18 +181,19 @@ class Moderation(commands.Cog):
     @commands.cooldown(5, 1, commands.BucketType.member)
     @commands.has_permissions(ban_members=True)
     async def softban(self, ctx, member : discord.Member, *, reason = None):
-     if ctx.author.top_role.position <= member.top_role.position:
-       return await ctx.send("You can't softban someone higher or equal to you in the roles hierarchy. ")
-     if ctx.author.top_role.position > member.top_role.position:
-       embed = discord.Embed(title="Ban:", description=f"🔨You were banned in {ctx.guild.name}!", colour=discord.Colour.red())
-       embed.add_field(name="Reason:", value=reason, inline=False)
-       embed.add_field(name="Responsible Moderator:", value=f'{ctx.author.name}', inline=False)
-       await member.send(embed=embed)
-       await member.ban(reason = reason, delete_message_days = 7)
-       embed = discord.Embed(title="Ban:", description=f"✅Successfully banned {member.name}!", colour=discord.Colour.blue())
-       embed.add_field(name="Reason:", value=reason, inline=False)
-       embed.add_field(name="Responsible Moderator:", value=f'{ctx.author.mention}', inline=False)
-       await ctx.send(embed=embed)
+        if ctx.author.top_role.position <= member.top_role.position:
+            return await ctx.send("You can't softban someone higher or equal to you in the roles hierarchy.")
+        embed = discord.Embed(title="Ban:", description=f"🔨You were banned in {ctx.guild.name}!", colour=discord.Colour.red())
+        embed.add_field(name="Reason:", value=reason, inline=False)
+        embed.add_field(name="Responsible Moderator:", value=f'{ctx.author.name}', inline=False)
+        try:
+          await member.send(embed=embed)
+        except:
+            await ctx.send
+        embed = discord.Embed(title="Ban:", description=f"✅Successfully banned {member.name}!", colour=discord.Colour.blue())
+        embed.add_field(name="Reason:", value=reason, inline=False)
+        embed.add_field(name="Responsible Moderator:", value=f'{ctx.author.mention}', inline=False)
+        await ctx.send(embed=embed)
 
     @kick.error
     async def softban_error(self, ctx, error):

@@ -1,7 +1,7 @@
 from PIL import Image
 from io import BytesIO
-import discord
-from discord.ext import commands
+import discord,os
+from discord.ext import commands,tasks
 import aiohttp
 from os import getenv
 
@@ -12,6 +12,13 @@ def killmessages(user, killer, mention):
 class Slap(commands.Cog):
   def __init__(self,client):
     self.client = client  
+    self.Deleter.start()
+    print("Loaded Image2")
+
+  @tasks.loop(minutes=3)
+  async def Deleter(self):
+    for file in os.listdir("./images/UsersFile/"):
+       os.remove(file)
 
   @commands.command()
   async def slap(self,ctx, user : discord.Member):
@@ -117,8 +124,8 @@ class Slap(commands.Cog):
     await ctx.send(file=discord.File('adminned.jpg'))
 
 
-@commands.command()
-async def team(self,ctx,member1:discord.Member,member2:discord.Member,member3:discord.Member,member4:discord.Member,member5:discord.Member,member6:discord.Member,member7:discord.Member,member8:discord.Member):
+  @commands.command()
+  async def team(self,ctx,member1:discord.Member,member2:discord.Member,member3:discord.Member,member4:discord.Member,member5:discord.Member,member6:discord.Member,member7:discord.Member,member8:discord.Member):
 
     #await ctx.send('HAHA U CANT SLAP TOO GOOD PEOPLE TRY TO SLAP SOMEONE ELSE LOL')
 

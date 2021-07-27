@@ -831,7 +831,10 @@ class Fun(commands.Cog):
     @commands.command()
     async def bird(self,ctx):
       url = "https://some-random-api.ml/img/birb"
-      response = await self.session.get(url).json()
+      async with self.session as session:
+          async with await self.session.get(url) as resp:
+              response = await resp.json()
+
       final_dog =  response['link']
       embed=discord.Embed(title='Bird',description='AWWWWWW',colour=discord.Colour.blue())
       embed.set_footer(text=f'{ctx.author.name} asked me...Dont Blame me',icon_url=f'{ctx.author.avatar_url}')
@@ -880,13 +883,10 @@ class Fun(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command(aliases=['diprate', 'dip',])
+    @commands.command(aliases=['diprate', 'dip'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def stabrate(self, ctx, user : discord.Member=None):
-        if user == None:
-            user = ctx.author
-        else:
-            pass
+        user = user or ctx.autor
         chance = random.randint(1, 101)
         embed = discord.Embed(
             title='**Chances of {} getting stabbed:**'.format(user),

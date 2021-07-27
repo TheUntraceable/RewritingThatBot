@@ -12,8 +12,9 @@ class Blacklist(commands.Cog):
         if user == None:
             return await ctx.send("Please enter a user.")
         realUser = self.client.blacklist.find_one({"_id": user.id})
-        if realUser == None:
-            self.clientblacklist.insert_one(
+
+        if not realUser:
+            self.client.blacklist.insert_one(
                 {
                     "_id": user.id
                 }

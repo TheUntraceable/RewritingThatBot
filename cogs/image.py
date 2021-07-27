@@ -3,21 +3,24 @@ from discord.ext import commands
 import os
 from PIL import Image
 from io import BytesIO
-from discord.ext import commands
+from discord.ext import commands,tasks
 import os
 from io import BytesIO
 import aiohttp
 import os
-import sr_api
 
 
-client = sr_api.Client()
 
 class Images(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.Deleter.start()
         print("Loaded Image")
 
+    @tasks.loop(minutes=3)
+    async def Deleter(self):
+        for file in os.listdir("./images/UsersFile/"):
+            os.remove(file)
     @commands.command()
     async def wanted(self, ctx, user: discord.Member = None):
       if user == None:
@@ -33,10 +36,10 @@ class Images(commands.Cog):
 
       wanted.paste(pfp, (78, 219))
 
-      wanted.save("wantedposter.jpg")
+      wanted.save("./images/UsersFile/wantedposter.jpg")
 
       await ctx.send(file = discord.File("wantedposter.jpg"))
-
+      
     @commands.command()
     async def trash(self, ctx, user: discord.Member = None):
       if user == None:
@@ -52,7 +55,7 @@ class Images(commands.Cog):
 
       wanted.paste(pfp, (50, 108))
 
-      wanted.save("trashposter.jpg")
+      wanted.save("./images/UsersFile/trashposter.jpg")
 
       await ctx.send(file = discord.File("trashposter.jpg"))
 
@@ -73,7 +76,7 @@ class Images(commands.Cog):
 
       wanted.paste(pfp, (80, 90))
 
-      wanted.save("deletedposter.jpg")
+      wanted.save("./images/UsersFile/deletedposter.jpg")
 
       await ctx.send(file = discord.File("deletedposter.jpg"))
 
@@ -92,7 +95,7 @@ class Images(commands.Cog):
 
       wanted.paste(pfp, (330, 190))
 
-      wanted.save("disabilityposter.jpg")
+      wanted.save("./images/UsersFile/disabilityposter.jpg")
 
       await ctx.send(file = discord.File("disabilityposter.jpg"))
 
@@ -111,7 +114,7 @@ class Images(commands.Cog):
 
       wanted.paste(pfp, (240, 420))
 
-      wanted.save("affectposter.jpg")
+      wanted.save("./images/UsersFile/affectposter.jpg")
 
       await ctx.send(file = discord.File("affectposter.jpg"))
 
@@ -130,7 +133,7 @@ class Images(commands.Cog):
 
       wanted.paste(pfp, (350, 300))
 
-      wanted.save("bedposter.jpg")
+      wanted.save("./images/UsersFile/bedposter.jpg")
 
       await ctx.send(file = discord.File("bedposter.jpg"))
 
@@ -149,7 +152,7 @@ class Images(commands.Cog):
 
       wanted.paste(pfp, (400, 400))
 
-      wanted.save("banposter.jpg")
+      wanted.save("./images/UsersFile/banposter.jpg")
 
       await ctx.send(file = discord.File("banposter.jpg"))
 
@@ -169,7 +172,7 @@ class Images(commands.Cog):
 
       wanted.paste(pfp, (700, 400))
 
-      wanted.save("shitposter.jpg")
+      wanted.save("./images/UsersFile/shitposter.jpg")
 
       await ctx.send(file = discord.File("shitposter.jpg"))
 
@@ -188,7 +191,7 @@ class Images(commands.Cog):
 
       wanted.paste(pfp, (450, 30))
 
-      wanted.save("fakeposter.jpg")
+      wanted.save("./images/UsersFile/fakeposter.jpg")
 
       await ctx.send(file = discord.File("fakeposter.jpg"))
 
@@ -209,9 +212,8 @@ class Images(commands.Cog):
         slap = slap.copy()
         slap.paste(pfp, (35,34))
         slap.paste(pfp2, (859,49))
-        slap.save("slap.jpg")
+        slap.save("./images/UsersFile/slap.jpg")
         await ctx.send(file=discord.File("slap.jpg"))
-        os.remove("slap.jpg")
 
     @commands.command()
     async def spank(self, ctx, member:discord.Member=None):
@@ -230,9 +232,8 @@ class Images(commands.Cog):
         spank = spank.copy()
         spank.paste(pfp, (825,377))
         spank.paste(pfp2, (575,5))
-        spank.save("spank.jpg")
+        spank.save("./images/UsersFile/spank.jpg")
         await ctx.send(file=discord.File("spank.jpg"))
-        os.remove("spank.jpg")
 
 
     @commands.command()
