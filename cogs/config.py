@@ -1,8 +1,7 @@
 import discord 
-import os 
+
 from discord.ext import commands
 from cogs.config import *
-import motor.motor_asyncio
 class Config(commands.Cog):
     def __init__(self, client):
         self.client = client

@@ -902,6 +902,120 @@ class Utilities(commands.Cog):
         msg = ''.join(random.choices(hexval, k=6))
         await ctx.send('#' + msg)
 
+    @commands.command(aliases=["pfp"])
+    async def avatar(ctx):
+        embed = discord.Embed(
+            title=f"{ctx.author.display_name}'s Avatar",
+            color=discord.Color.teal()
+        ).set_image(url=ctx.author.avatar_url)
+
+        await ctx.reply(embed=embed)
+    @commands.command()
+    async def rps(self,ctx):
+    #try:
+        rpsEmbed = discord.Embed(color=random.randint(
+            0, 0xffffff))
+        rpsEmbed.add_field(name='Rock', value='\U0001faa8')
+        rpsEmbed.add_field(name='Paper', value='\U0001f4dc')
+        rpsEmbed.add_field(name='Scissors', value='\U00002702')
+        rpsEmbed.set_footer(text='The message will be deleted after 1 minute')
+        question_choose = await ctx.reply(embed=rpsEmbed)
+        
+        await question_choose.add_reaction('\U0001faa8')
+        await question_choose.add_reaction('\U0001f4dc')
+        await question_choose.add_reaction('\U00002702')
+        #             scissors        rock          paper
+        selects = [u'\U00002702', u'\U0001faa8', u'\U0001f4dc']
+        scissors = '\U00002702'; rock = '\U0001faa8'; paper = '\U0001f4dc'
+        try:
+            reaction, user = await self.client.wait_for('reaction_add', check=lambda reaction, user: user == ctx.author and str(reaction.emoji) in selects and reaction.message.id == question_choose.id, timeout=60)
+        except asyncio.TimeoutError:
+            return await ctx.send("You took too long to reply. Anyways I won.")
+        # choose random sleects from the list
+        bot_select = random.choice(selects)
+        user_select = str(reaction.emoji)
+        if str(bot_select) == rock and str(user_select) == scissors or str(bot_select) == paper and str(user_select) == rock or str(bot_select) == scissors and str(user_select) == paper:
+            await question_choose.delete()
+            choose_embed = discord.Embed(color=0x2ecc71)
+            choose_embed.add_field(
+                name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
+            choose_embed.add_field(
+                name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
+            choose_embed.set_author(
+                name='I won!!', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
+            choose_embed.set_footer(
+                text=ctx.author.name, icon_url=ctx.author.avatar_url)
+            await ctx.reply(embed=choose_embed)
+        if str(user_select) == rock and str(bot_select) == scissors or str(user_select) == paper and str(bot_select) == rock or str(user_select) == scissors and str(bot_select) == paper:
+            await question_choose.delete()
+            choose_embed = discord.Embed(color=0x2ecc71)
+            choose_embed.add_field(
+                name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
+            choose_embed.add_field(
+                name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
+            choose_embed.set_author(
+                name='You won!!', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
+            choose_embed.set_footer(
+                text=ctx.author.name, icon_url=ctx.author.avatar_url)
+            await ctx.reply(embed=choose_embed)
+        elif str(user_select) == str(bot_select):
+            await question_choose.delete()
+            choose_embed = discord.Embed(color=0x2ecc71)
+            choose_embed.add_field(
+                name='You Chose :bust_in_silhouette:', value=f'**{user_select}**', inline=True)
+            choose_embed.add_field(
+                name='Falc Chose :robot:', value=f'**{bot_select}**', inline=True)
+            choose_embed.set_author(
+                name='We Drew!!', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
+            choose_embed.set_footer(
+                text=ctx.author.name, icon_url=ctx.author.avatar_url)
+            await ctx.reply(embed=choose_embed)
+    
+    @commands.command(name="emojiinfo", aliases=["ei"])
+    async def emoji_info(self, ctx, emoji: discord.Emoji = None):
+        if not emoji:
+            return await ctx.invoke(self.client.get_command("help"), entity="emojiinfo")
+
+        try:
+            emoji = await emoji.guild.fetch_emoji(emoji.id)
+        except discord.NotFound:
+            return await ctx.send("I could not find this emoji in the given guild.")
+
+        is_managed = "Yes" if emoji.managed else "No"
+        is_animated = "Yes" if emoji.animated else "No"
+        requires_colons = "Yes" if emoji.require_colons else "No"
+        creation_time = emoji.created_at.strftime("%I:%M %p %B %d, %Y")
+        can_use_emoji = (
+            "Everyone"
+            if not emoji.roles
+            else " ".join(role.name for role in emoji.roles)
+        )
+
+        description = f"""
+        **General:**
+        **- Name:** {emoji.name}
+        **- Id:** {emoji.id}
+        **- URL:** [Link To Emoji]({emoji.url})
+        **- Author:** {emoji.user.mention}
+        **- Time Created:** {creation_time}
+        **- Usable by:** {can_use_emoji}
+        
+        **Other:**
+        **- Animated:** {is_animated}
+        **- Managed:** {is_managed}
+        **- Requires Colons:** {requires_colons}
+        **- Guild Name:** {emoji.guild.name}
+        **- Guild Id:** {emoji.guild.id}
+        """
+
+        embed = discord.Embed(
+            title=f"**Emoji Information for:** `{emoji.name}`",
+            description=description,
+            colour=0xADD8E6,
+        )
+        embed.set_thumbnail(url=emoji.url)
+        await ctx.send(embed=embed)
+
 
 
 def setup(client):

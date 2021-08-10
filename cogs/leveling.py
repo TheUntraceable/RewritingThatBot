@@ -1,10 +1,6 @@
 import discord
 import time
 from discord.ext import commands
-'''
-client.levels_cooldown = cluster["discord"]["levels_cooldown"]
-client.leveling = cluster["discord"]["guild_levels"]
-'''
 
 class LevelSys(commands.Cog):
     def __init__(self, client):

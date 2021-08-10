@@ -1,4 +1,5 @@
 import discord
+from prsaw import RandomStuffV4
 from discord.ext import commands
 import random
 import asyncio
@@ -33,6 +34,15 @@ class Fun(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.session = aiohttp.ClientSession()
+        self.rs = RandomStuffV4(async_mode=True, api_key='LyQw1aCdSQcL',dev_name="Untraceable/GoldLion",bot_name="Falc",ai_language="English")
+        self.client.sniped_messages = {}
+        self.client.edit_sniped_messages = {}
+    @commands.command(aliases=['chatbot', 'chat', 'talk'])
+    async def ai(self, ctx,*,message):
+        async with ctx.typing():
+            response = await self.rs.get_ai_response(message,unique_id=ctx.author.id)
+        await ctx.reply(response[0]["message"])
+
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(
         aliases=['8ball', '8b'],
@@ -67,6 +77,217 @@ class Fun(commands.Cog):
         await ctx.send("**FOUND IT!**")
         await ctx.send("SIKE NO ONE GIVES A FUCK")
         await asyncio.sleep(200)
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        if before.author.bot:
+            return
+        self.client.edit_sniped_messages[before.guild.id, before.channel.id] = (
+                                                before.content,
+                                                after.content,
+                                                before.author,
+                                                before.channel.name
+                                                )
+
+    @commands.command(aliases=['s'])
+    async def snipe(self, ctx):
+        try:
+            contents, author, channel_name, time, attachments = self.client.sniped_messages[
+                ctx.guild.id, ctx.channel.id]
+            
+            files = ""
+            for file in attachments:
+                files += f"[{file.filename}]({file.proxy_url})" + "\n"
+            embed = discord.Embed(
+                description=contents, color=0x00FFFF, timestamp=time)
+            embed.set_author(
+                name=f"{author.name}#{author.discriminator}",
+                icon_url=author.avatar_url)
+            embed.add_field(
+                name="Attachments",
+                value=files[:-1] if len(attachments) != 0 else "None"
+            )
+            embed.set_footer(text=f"Deleted in #{channel_name}")
+
+            await ctx.send(embed=embed)
+        except:
+            await ctx.send("No messages were deleted here.")
+    
+    @commands.command()
+    async def wyr(self,ctx):
+        wyr = ['Would you rather the aliens that make first contact be robotic or organic?',
+        'Would you rather lose the ability to read or lose the ability to speak?',
+        'Would you rather have a golden voice or a silver tongue?',
+        'Would you rather be covered in fur or covered in scales?',
+        'Would you rather be in jail for a year or lose a year off your life?',
+        'Would you rather always be 10 minutes late or always be 20 minutes early?',
+        'Would you rather have one real get out of jail free card or a key that opens any door?',
+        'Would you rather know the history of every object you touched or be able to talk to animals?',
+        'Would you rather be married to a 10 with a bad personality or a 6 with an amazing personality?',
+        'Would you rather be able to talk to land animals, animals that fly, or animals that live under the water?',
+        'Would you rather have all traffic lights you approach be green or never have to stand in line again?',
+        'Would you rather spend the rest of your life with a sailboat as your home or an RV as your home?',
+        'Would you rather give up all drinks except for water or give up eating anything that was cooked in an oven?',
+        'Would you rather be able to see 10 minutes into your own future or 10 minutes into the future of anyone but yourself?',
+        'Would you rather have an easy job working for someone else or work for yourself but work incredibly hard?',
+        'Would you rather be the first person to explore a planet or be the inventor of a drug that cures a deadly disease?',
+        'Would you rather go back to age 5 with everything you know now or know now everything your future self will learn?',
+        'Would you rather be able to control animals (but not humans) with your mind or control electronics with your mind?',
+        'Would you rather have unlimited international first-class tickets or never have to pay for food at restaurants?',
+        'Would you rather see what was behind every closed door or be able to guess the combination of every safe on the first try?',
+        'Would you rather be an average person in the present or a king of a large country 2500 years ago?',
+        'Would you rather be able to dodge anything no matter how fast it’s moving or be able to ask any three questions and have them answered accurately?',
+        'Would you rather be forced to dance every time you heard music or be forced to sing along to any song you heard?',
+        'Would you rather have all your clothes fit perfectly or have the most comfortable pillow, blankets, and sheets in existence?',
+        'Would you rather 5% of the population have telepathy, or 5% of the population have telekinesis? You are not part of the 5% that has telepathy or telekinesis.',
+        'Would you rather be an unimportant character in the last movie you saw or an unimportant character in the last book you read?',
+        'Would you rather move to a new city or town every week or never be able to leave the city or town you were born in?',
+        'Would you rather be completely insane and know that you are insane or completely insane and believe you are sane?',
+        'Would you rather travel the world for a year on a shoestring budget or stay in only one country for a year but live in luxury?',
+        'Would you rather suddenly be elected a senator or suddenly become a CEO of a major company? (You won’t have any more knowledge about how to do either job than you do right now.)',
+        'Would you rather live in virtual reality where you are all powerful or live in the real world and be able to go anywhere but not be able to interact with anyone or anything?',
+        'Would you rather have whatever you are thinking to appear above your head for everyone to see or have absolutely everything you do live streamed for anyone to see?',
+        'Would you rather wake up as a new random person every year and have full control of them for the whole year or once a week spend a day inside a stranger without having any control of them?',
+        'Would you rather know how above or below average you are at everything or know how above or below average people are at one skill/talent just by looking at them?',
+        'Would you rather every shirt you ever wear be kind of itchy or only be able to use 1 ply toilet paper?']
+        await ctx.send(f'{random.choice(wyr)}')
+
+    @commands.command()
+    async def truth(self,ctx):
+        truth = ['What are your top three turn-ons?',
+                'What is your darkest fear?',
+                'Tell me about your first kiss.',
+                'Who is the sexiest person here?',
+                'What is your biggest regret?',
+                'Who is your crush among yourselves?',
+                'Tell me about your most awkward date.',
+                'When was the last time you peed in bed?',
+                'What is the biggest lie you have ever told?',
+                'What do most people think is true about you, but isn’t?',
+                'What is the biggest thing you’ve gotten away with?',
+                'What would you do if you were the opposite sex for a day?',
+                'What is the most expensive thing you have stolen?',
+                'What is the most childish thing you still do?',
+                'What’s the worst time you let someone take the blame for something you did?',
+                'Who here would you most like to make out with?',
+                'What is something that people think you would never be into, but you are?',
+                'What was the worst encounter you had with a police officer?',
+                'What is the silliest thing you have an emotional attachment to?',
+                'What is the most embarrassing thing your parents have caught you doing?',
+                'What is the scariest dream you have ever had?',
+                'What is the most embarrassing thing in your room?',
+                'What is the stupidest thing you have ever done?',
+                'What terrible thing have you done that you lied to cover up?',
+                'Who have you loved but they didn’t love you back?',
+                'What are the disgusting habits you have?',
+                'What was the cruelest joke you played on someone?',
+                'What was the most awkward romantic encounter you have had?',
+                'What is the most embarrassing nickname you have ever had?',
+                'What is the weirdest thing you have done for a boyfriend or girlfriend?',
+                'What do you really hope your parents never find out about?',
+                'Tell me something you don’t want me to know.'
+                'What’s one thing you’d do if you knew there no consequences?',
+                'Have you ever lied about your age?',
+                'What celebrity do you think is overrated?',
+                'Have you ever regifted a present?',
+                'What’s the biggest lie you told, without getting caught?',
+                'What is your last photo you took on your phone?',
+                'Do you sleep with a blanket or stuffed animal?',
+                'If you couldnt go to the college or get the job of your dreams, what would you do?'
+                'Any special talents? If so, what?',
+                'What is your favorite sport?',
+                'What would you want your last meal to be?',
+                'What is your favorite food?',
+                'What is your favorite game?',
+                'What is your favorite song?',
+                'Do you follow your heart or your head?',
+                'If you could have one super power, what would it be?',
+                'Do you recycle?',
+                'Do you like to dance or sing?'
+                'If you could choose a different career, what would it be and why?']
+        await ctx.send(f'{random.choice(truth)}')
+    @commands.command()
+    async def dare(self,ctx):
+        dare = ['Eat five tablespoons of a condiment.',
+            'Be someone’s pet for the next 5 minutes.',
+            'Let the group give you a new hairstyle.',
+            'Curse like sailor for 20 seconds straight.',
+            'Break two eggs on your head.',
+            'Take a shower with your clothes on.',
+            'Put 4 ice cubes down your pants.',
+            'Eat one teaspoon of the spiciest thing you have in the kitchen.',
+            'Jump up and down as high as you can go for a full minute.'
+            'Spin an imaginary hula hoop around your waist for 3 minutes.',
+            'Dance with no music for 1 minute.',
+            'Put 2 ice cubes down your pants and/or shirt.',
+            'Find something to wear as a cape, and act like a superhero.',
+            'Go outside, and run around in a circle, 5 times.',
+            'Try to lick your elbow.',
+            'Make up a random poem and share it with us.',
+            'Crack an egg on your head.',
+            'Do the macarena for 2 minutes straight.',
+            'Wear all your clothing inside-out for an hour.',
+            'Try to do a handstand. (Be careful!!)',
+            'Go outside and cut the grass with an invisible mower.',
+            'Pick the third number on your contacts list and message them a silly poem.',
+            'Wait until a dog walks past your house and bark at it.',
+            'Knock on someone’s door and try to run away before they answer.']
+        await ctx.reply(f'{random.choice(dare)}')
+
+    @commands.command(aliases = ['es', 'esnipe'])
+    async def editsnipe(self, ctx):
+        try:
+            before_content, after_content, author, channel_name = self.client.edit_sniped_messages[ctx.guild.id, ctx.channel.id]
+
+            embed = discord.Embed(description = f"**Before:**\n{before_content}\n\n**After:**\n{after_content}", color=0x00FFFF)
+            embed.set_author(name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url)
+            embed.set_footer(text=f"Edited in #{channel_name}")
+
+            await ctx.send(embed=embed)
+        except:
+            await ctx.send("No messages were edited here.")
+
+
+    @commands.Cog.listener()
+    async def on_message(self, msg):
+
+        if msg.author.bot:
+            return
+        if len(msg.mentions) == 0:
+            return
+        self.client.sniped_messages[msg.guild.id, msg.channel.id] = (
+            msg.content, msg.author, msg.channel.name,
+            msg.created_at, msg.attachments)
+
+        for mention in msg.mentions:
+            data = await self.client.afk.find_one({"memberID" : mention.id})
+            if not data:
+                pass
+            msgs = f"{mention.name} is AFK with reason : {data['reason']}"
+            await msg.channel.send(msgs)
+
+        CheckForAuthor = await self.client.afk.find_one({"memberID" : msg.author.id})
+        if not CheckForAuthor:
+            return
+        else:
+            await self.client.afk.delete_one({"memberID" : msg.author.id})
+            await msg.channel.send("Welcome back {}, I removed your AFK.".format(msg.author.mention), delete_after = 10)
+            await msg.author.edit(nick=None)
+
+
+    @commands.command(aliases=["away_from_keyboard"], 
+   description="Sets your AFK when you wanna let others know ur gone.", 
+   usage="[reason]")
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def afk(self, ctx, *, message = "AFK"):
+        self.client.afk.insert_one({"memberID" : ctx.author.id,"reason" : message})
+        await ctx.reply("{}, I have set your AFK with reason : {}".format(ctx.author.mention, message))  
+        try:
+            await ctx.author.edit(nick = f"[AFK] {ctx.author.name}")
+        except discord.Forbidden:
+            pass
+        else:
+            return
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(brief=" | Repeat a message")
@@ -1170,7 +1391,7 @@ class Fun(commands.Cog):
         await ctx.send("Enter another adjective")
         Adj9 = await self.client.wait_for('message', check=check)
         await ctx.send("Enter an exclamation")
-        Excl = await self.client.wait_for('message', check=check)
+        Excl = await self.client.wait_for('mage', check=check)
         mainStory = "Many say that " + str(Organ.clean_content) + " storming is " + str(Adj1.clean_content) + " and does not "\
                     + str(Verb1.clean_content) + ". However, with the combination of the right " + str(plNoun1.clean_content) + \
                     ", " + str(plNoun2.clean_content) + " and " + str(plNoun3.clean_content) + " anyone can lead a " + \

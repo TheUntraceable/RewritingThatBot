@@ -4,25 +4,16 @@ import math
 import datetime
 import mpmath
 
-def ErrorEmbed(title,reason):
-  embed = discord.Embed(
-      title = title,
-      description = reason,
-      color = discord.Color.red(),
-      timestamp = datetime.datetime.utcnow()
-    )
-  embed.set_author(name = "Error")
-  return embed
-
-def ee(title,reason):
-  embed = discord.Embed(
-      title = title,
-      description = reason,
-      color = discord.Color.red(),
-      timestamp = datetime.datetime.utcnow()
-    )
-  embed.set_author(name = "Error")
-  return embed
+class ErrorEmbed:
+  def ee(self,title,reason):
+    embed = discord.Embed(
+        title = title,
+        description = reason,
+        color = discord.Color.red(),
+        timestamp = datetime.datetime.utcnow()
+      )
+    embed.set_author(name = "Error")
+    return embed
 
 class Calculator(commands.Cog):
   def __init__(self, client):
@@ -38,7 +29,7 @@ class Calculator(commands.Cog):
     """Add two numbers together."""
     
     if a == None or b == None:
-      embed = ee("Missing Command Arguments", "You need to specify two numbers to add.")
+      embed = ErrorEmbed.ee("Missing Command Arguments", "You need to specify two numbers to add.")
       await ctx.send(embed = embed)
     else:
       try:
@@ -47,7 +38,7 @@ class Calculator(commands.Cog):
         try:
           a = float(a)
         except:
-          embed = ee("Invalid Command Arguments", "Make sure your numbers are either floats or integers.")
+          embed = ErrorEmbed.ee("Invalid Command Arguments", "Make sure your numbers are either floats or integers.")
           await ctx.send(embed=embed)
           return
 
@@ -57,7 +48,7 @@ class Calculator(commands.Cog):
         try:
           b = float(b)
         except:
-          embed = ee("Invalid Command Arguments", "Make sure your numbers are either floats or integers.")
+          embed = ErrorEmbed.ee("Invalid Command Arguments", "Make sure your numbers are either floats or integers.")
           await ctx.send(embed=embed)
           return
 

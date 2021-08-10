@@ -19,22 +19,7 @@ class Moderation(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-# Events
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
-        if isinstance(error, commands.MemberNotFound):
-         embed = discord.Embed(title="❌ Member not found!", name="Enter a valid member", colour=discord.Colour.red())
-         await ctx.send(embed=embed)
-        if isinstance(error, commands.BotMissingPermissions):
-          embed = discord.Embed(title=f'❌ I do not have permission to do this! {error}', colour=discord.Colour.red())
-          await ctx.send(embed=embed)
-        if isinstance(error, commands.CommandOnCooldown):
-          msg = 'This command on cooldown please try again in {:.2f}s!'.format(
-            error.retry_after)
-          await ctx.send(msg)
-        else:
-            raise error
-# Commands
+    # Commands
     @commands.command(aliases = ['boot', 'yeet'])
     @commands.bot_has_permissions(kick_members=True)
     @commands.cooldown(per=5, rate=1)
